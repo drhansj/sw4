@@ -1,0 +1,16 @@
+To run these scripts, you must first (from the sw4 install directory):
+
+> cd sw4lite
+> make ckernel=yes openmp=yes
+
+After the build successfulll completes with ASCII art, 
+the executable should be in sw4lite/optimize_mp/sw4g.
+
+On cori.nersc.gov, to submit a one-node, mpi vs. omp comparison job 
+on KNL in quadcache mode, run:
+
+> sbatch cori_knl_mpi_vs_threading_quadcache.slurm
+
+Results should be in files:
+
+

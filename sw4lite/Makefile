@@ -34,6 +34,17 @@ else ifeq ($(findstring carl,$(HOSTNAME)),carl)
   EXTRA_FORT_FLAGS = -xCORE-AVX2
   EXTRA_LINK_FLAGS = -Wl,-rpath=$(SW4ROOT)/lib -Wl,-rpath=${MKL_PATH} -L${MKL_PATH} -lmkl_intel_lp64 -lmkl_core -lmkl_sequential -lpthread -lm -ldl -lifcore
   openmp = yes
+else ifeq ($(findstring cori,$(HOSTNAME)),cori)
+  # NOTE: by default, module craype-haswell is loaded
+	# cray compiler wrappers
+	FC = ftn
+	CXX = CC
+	# Enables OpenMP for cray compiler wrappers
+	OMPOPT = -qopenmp
+	# NOTE: for KNL, you must do a module change: 
+	# module swap craype-haswell craype-mic-knl
+	# This generates an optimization report for each file
+	# EXTRA_CXX_FLAGS = -qopt-report=5
 else ifeq ($(findstring valhall,$(HOSTNAME)),valhall)
   FC = mpif90_ifort
   CXX = mpicc_icc
