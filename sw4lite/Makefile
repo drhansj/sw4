@@ -36,22 +36,40 @@ else ifeq ($(findstring carl,$(HOSTNAME)),carl)
   openmp = yes
 else ifeq ($(findstring cori,$(HOSTNAME)),cori)
   # NOTE: by default, module craype-haswell is loaded
-	# cray compiler wrappers
-	FC = ftn
-	CXX = CC
-	# Enables OpenMP for cray compiler wrappers
-	OMPOPT = -qopenmp
-	# NOTE: for KNL, you must do a module change: 
-	# module swap craype-haswell craype-mic-knl
-	# This generates an optimization report for each file
-	# EXTRA_CXX_FLAGS = -qopt-report=5
-else ifeq ($(findstring valhall,$(HOSTNAME)),valhall)
+  # cray compiler wrappers
+  FC = ftn
+  CXX = CC
+  # Enables OpenMP for cray compiler wrappers
+  OMPOPT = -qopenmp
+  # NOTE: for KNL, you must do a module change: 
+  # module swap craype-haswell craype-mic-knl
+  # This generates an optimization report for each file
+  # EXTRA_CXX_FLAGS = -qopt-report=5
+ifeq ($(findstring valhall,$(HOSTNAME)),valhall)
   FC = mpif90_ifort
   CXX = mpicc_icc
   OMPOPT = -qopenmp
   EXTRA_LINK_FLAGS = -lifcore -lblas -llapack
   openmp = yes
   debug = no
+#
+# LBL quadknl is Hans' single node Intel KNL machine
+#
+else ifeq ($(findstring quadknl,$(HOSTNAME)),quadknl)
+  FC = mpiifort
+  CXX = mpiicpc
+  CC = icc
+  OMPOPT = -qopenmp
+  MKL_PATH = /opt/intel/compilers_and_libraries_2017/linux/mkl/lib/intel64
+  OTHER_PATH = /opt/intel/compilers_and_libraries_2017/linux/lib/intel64
+  BASIC_PATH = /opt/intel/lib/intel64
+  EXTRA_CXX_FLAGS = -xmic-avx512
+  EXTRA_C_FLAGS = -xmic-avx512
+  EXTRA_FORT_FLAGS = -xmic-avx512 
+  EXTRA_LINK_FLAGS = -Wl,-rpath=${MKL_PATH} -Wl,-rpath=${BASIC_PATH} -L${MKL_PATH} -lmkl_intel_lp64 -lmkl_core -lmkl_sequential -lpthread -lm -ldl -Wl,-rpath=${OTHER_PATH} -L${OTHER_PATH} -lifcore -L${BASIC_PATH} -limf -lsvml -lintlc
+# for building testil
+#  EXTRA_LINK_FLAGS = -Wl,-rpath=${OTHER_PATH} -L${OTHER_PATH} -lifcore -L${BASIC_PATH} -limf -lsvml -lintlc -lm -ldl 
+  openmp = yes
 else
   FC  = mpif90
   CXX = mpic++
