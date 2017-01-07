@@ -1,17 +1,29 @@
+#-----------------------------------------------------------------------
+# Usage:
+# make sw4lite [ckernel=yes/no] (default is ckernel=no, i.e. use the Fortran kernel)
+#
 # To define the compilers on LC:
 # use ic-16.0.210
 # use mvapich2-intel-2.1
 #
+
+ifneq ($(ckernel),yes)
+   ckernel := "no"
+endif
+
 HOSTNAME := $(shell hostname)
 
+# Fourier is Anders' mac powerbook
 ifeq ($(findstring fourier,$(HOSTNAME)),fourier)
   FC = mpif90
+  CC = gcc
   CXX = mpicxx
   OMPOPT = -fopenmp
   EXTRA_LINK_FLAGS = -framework Accelerate -L/opt/local/lib/gcc48 -lgfortran
   openmp = yes
+# LC quartz is a large cluster of Intel Haswell nodes
 else ifeq ($(findstring quartz,$(HOSTNAME)),quartz)
-  FC = mpiifort
+  FC = mpifort
   CXX = mpicxx
   OMPOPT = -qopenmp
   MKL_PATH = /usr/tce/packages/mkl/mkl-11.3.3/lib
@@ -19,20 +31,65 @@ else ifeq ($(findstring quartz,$(HOSTNAME)),quartz)
   EXTRA_FORT_FLAGS = -xCORE-AVX2
   EXTRA_LINK_FLAGS = -Wl,-rpath=$(SW4ROOT)/lib -Wl,-rpath=${MKL_PATH} -L${MKL_PATH} -lmkl_intel_lp64 -lmkl_core -lmkl_sequential -lpthread -lm -ldl -lifcore
   openmp = yes
+# LC cab is a large cluster of Intel Xeon nodes
 else ifeq ($(findstring cab,$(HOSTNAME)),cab)
 # assumes: use ic_16.0.210, use mvapich2-intel-2.1
   FC = mpif90
   CXX = mpic++
   OMPOPT = -fopenmp
   EXTRA_LINK_FLAGS = -lblas -llapack
+# NERSC carl is a single node Intel KNL machine
 else ifeq ($(findstring carl,$(HOSTNAME)),carl)
   FC = mpiifort
   CXX = mpiicpc
   OMPOPT = -qopenmp
   MKL_PATH = /usr/common/software/intel/compilers_and_libraries_2016.3.210/linux/mkl/lib/intel64
-  EXTRA_CXX_FLAGS = -xCORE-AVX2
-  EXTRA_FORT_FLAGS = -xCORE-AVX2
+#  EXTRA_CXX_FLAGS = -xmic-avx512
+  EXTRA_CXX_FLAGS = -xmic-avx2
+#  EXTRA_CXX_FLAGS = -no-vec -no-simd
+  EXTRA_FORT_FLAGS = -xmic-avx512,core-avx2
   EXTRA_LINK_FLAGS = -Wl,-rpath=$(SW4ROOT)/lib -Wl,-rpath=${MKL_PATH} -L${MKL_PATH} -lmkl_intel_lp64 -lmkl_core -lmkl_sequential -lpthread -lm -ldl -lifcore
+  openmp = yes
+#
+# LBL quadknl is Hans' single node Intel KNL machine
+#
+else ifeq ($(findstring quadknl,$(HOSTNAME)),quadknl)
+  FC = mpiifort
+  CXX = mpiicpc
+  CC = icc
+  OMPOPT = -qopenmp
+  MKL_PATH = /opt/intel/compilers_and_libraries_2017/linux/mkl/lib/intel64
+  OTHER_PATH = /opt/intel/compilers_and_libraries_2017/linux/lib/intel64
+  BASIC_PATH = /opt/intel/lib/intel64
+  EXTRA_CXX_FLAGS = -xmic-avx512
+  EXTRA_C_FLAGS = -xmic-avx512
+  EXTRA_FORT_FLAGS = -xmic-avx512 
+  EXTRA_LINK_FLAGS = -Wl,-rpath=${MKL_PATH} -Wl,-rpath=${BASIC_PATH} -L${MKL_PATH} -lmkl_intel_lp64 -lmkl_core -lmkl_sequential -lpthread -lm -ldl -Wl,-rpath=${OTHER_PATH} -L${OTHER_PATH} -lifcore -L${BASIC_PATH} -limf -lsvml -lintlc
+# for building testil
+#  EXTRA_LINK_FLAGS = -Wl,-rpath=${OTHER_PATH} -L${OTHER_PATH} -lifcore -L${BASIC_PATH} -limf -lsvml -lintlc -lm -ldl 
+  openmp = yes
+#
+# Cori
+else ifeq ($(findstring cori,$(HOSTNAME)),cori)
+# cray compiler wrappers
+  FC = ftn
+  CXX = CC
+# intel
+#  FC = mpiifort
+#  CXX = mpiicpc
+#  OMPOPT = -fopenmp
+# haswell
+#  EXTRA_CXX_FLAGS = -xCORE-AVX2
+#  EXTRA_FORT_FLAGS = -xCORE-AVX2
+# optimization report
+#  EXTRA_CXX_FLAGS = -qopt_report=3
+# mkl flags
+#  EXTRA_LINK_FLAGS =  -lmkl_intel_lp64 -lmkl_core -lmkl_sequential -lpthread -lpthread -lm -ldl -lifcore
+# Cray-knl
+#  EXTRA_CXX_FLAGS = -hcpu=mic-knl
+#  EXTRA_FORT_FLAGS = -hcpu=mic-knl
+  OMPOPT = -qopenmp
+  EXTRA_LINK_FLAGS =  -lpthread -lm -ldl -lifcore
   openmp = yes
 else ifeq ($(findstring valhall,$(HOSTNAME)),valhall)
   FC = mpif90_ifort
@@ -40,7 +97,6 @@ else ifeq ($(findstring valhall,$(HOSTNAME)),valhall)
   OMPOPT = -qopenmp
   EXTRA_LINK_FLAGS = -lifcore -lblas -llapack
   openmp = yes
-  debug = no
 else
   FC  = mpif90
   CXX = mpic++
@@ -62,9 +118,9 @@ ifeq ($(optlevel),DEBUG)
    CXXFLAGS  = -g -I../src -DBZ_DEBUG
    CFLAGS    = -g
 else
-   FFLAGS   = -O3 -g
-   CXXFLAGS = -O2 -I../src -g
-   CFLAGS   = -O2 -g
+   FFLAGS   = -O3
+   CXXFLAGS = -O3 -I../src
+   CFLAGS   = -O3
 endif
 
 ifeq ($(openmp),yes)
@@ -73,19 +129,11 @@ ifeq ($(openmp),yes)
   CFLAGS   += $(OMPOPT) -DSW4_OPENMP
 endif
 
-ifeq ($(conly),yes)
+ifeq ($(ckernel),yes)
    CXXFLAGS += -DSW4_CROUTINES
-   ifeq ($(openmp),yes)
-	CXXFLAGS += $(OMPOPT) -DSW4_OPENMP
-   endif
 endif
 
-fullpath := $(shell pwd)
-
-HOSTNAME := $(shell hostname)
-UNAME := $(shell uname)
-
-ifeq ($(conly),yes)
+ifeq ($(ckernel),yes)
    ifeq ($(openmp),yes)
       debugdir := debug_mp_c
       optdir   := optimize_mp_c
@@ -102,9 +150,20 @@ else
       optdir   := optimize
    endif
 endif
+ifeq ($(single),yes)
+   debugdir := $(debugdir)_sp
+   optdir   := $(optdir)_sp
+   CXXFLAGS += -I../src/float
+else
+   CXXFLAGS += -I../src/double
+endif
 
 ifdef EXTRA_CXX_FLAGS
    CXXFLAGS += $(EXTRA_CXX_FLAGS)
+endif
+
+ifdef EXTRA_C_FLAGS
+   CFLAGS += $(EXTRA_C_FLAGS)
 endif
 
 ifdef EXTRA_FORT_FLAGS
@@ -121,19 +180,18 @@ else
    builddir = $(optdir)
 endif
 
-OBJ  = main.o EW.o Sarray.o Source.o SuperGrid.o GridPointSource.o time_functions.o EW_cuda.o ew-cfromfort.o rhs4sg.o rhs4sg_rev.o EWCuda.o CheckPoint.o Parallel_IO.o EW-dg.o MaterialData.o MaterialBlock.o Polynomial.o SecondOrderSection.o Filter.o TimeSeries.o sacsubc.o
+OBJ  = main.o EW.o Sarray.o Source.o SuperGrid.o GridPointSource.o time_functions.o EW_cuda.o ew-cfromfort.o rhs4sg.o rhs4sg_rev.o EWCuda.o CheckPoint.o Parallel_IO.o EW-dg.o MaterialData.o MaterialBlock.o Polynomial.o SecondOrderSection.o Filter.o TimeSeries.o sacsubc.o curvilinear-c.o rhs4sgcurv.o rhs4sgcurv_rev.o
 
-FOROBJ = rhs4th3fort.o boundaryOp.o addsgd.o solerr3.o bcfort.o type_defs.o lglnodes.o dgmodule.o
+FOROBJ = rhs4th3fort.o boundaryOp.o addsgd.o solerr3.o bcfort.o type_defs.o lglnodes.o dgmodule.o metric.o curvilinear4sg.o freesurfcurvisg.o
 
-ifneq ($(conly),yes)
+ifneq ($(ckernel),yes)
   OBJ += $(FOROBJ)
 endif
 FOBJ = $(addprefix $(builddir)/,$(OBJ))
 
-
-sw4g: $(FOBJ)
+sw4lite: $(FOBJ)
 	@echo "********* User configuration variables **************"
-	@echo "debug=" $(debug) " proj=" $(proj) " etree=" $(etree) " SW4ROOT"= $(SW4ROOT) 
+	@echo "ckernel=" $(ckernel) " debug=" $(debug) " proj=" $(proj) " etree=" $(etree) " SW4ROOT"= $(SW4ROOT) 
 	@echo "CXX=" $(CXX) "EXTRA_CXX_FLAGS"= $(EXTRA_CXX_FLAGS)
 	@echo "FC=" $(FC) " EXTRA_FORT_FLAGS=" $(EXTRA_FORT_FLAGS)
 	@echo "EXTRA_LINK_FLAGS"= $(EXTRA_LINK_FLAGS)
@@ -142,9 +200,19 @@ sw4g: $(FOBJ)
 	@cat wave.txt
 	@echo "*** Build directory: " $(builddir) " ***"
 
+OBJ2 =  testil.o rhs4sg.o rhs4sg_rev.o gettimec.o rhs4th3fort.o boundaryOp.o
+FOBJ2 = $(addprefix $(builddir)/,$(OBJ2))
+
+testil : $(FOBJ2)
+	$(CXX) $(CXXFLAGS) -o $@ $(FOBJ2) $(linklibs)
+
 $(builddir)/%.o:src/%.C
 	/bin/mkdir -p $(builddir)
 	cd $(builddir); $(CXX) $(CXXFLAGS) -c ../$< 
+
+$(builddir)/%.o:src/%.c
+	/bin/mkdir -p $(builddir)
+	cd $(builddir); $(CC) $(CFLAGS) -c ../$< 
 
 $(builddir)/%.o:src/%.f
 	/bin/mkdir -p $(builddir)
@@ -157,6 +225,7 @@ $(builddir)/%.o:src/%.f90
 clean:
 	/bin/mkdir -p $(optdir)
 	/bin/mkdir -p $(debugdir)
-	cd $(optdir); /bin/rm -f sw4g *.o; cd ../$(debugdir); /bin/rm -f sw4g *.o
+	/bin/mkdir -p optimize_mp_c
+	cd $(optdir); /bin/rm -f sw4lite *.o; cd ../$(debugdir); /bin/rm -f sw4lite *.o; cd ../optimize_mp_c; /bin/rm -f sw4lite *.o
 
 
