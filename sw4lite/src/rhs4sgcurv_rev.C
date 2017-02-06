@@ -1,4 +1,13 @@
 #include "sw4.h"
+#include "stdlib.h"
+
+#include <iostream>
+using namespace std;
+
+static bool dump1 = true;
+static bool dump2 = true;
+static int count1 = 0;
+static int count2 = 0;
 
 void rhs4sgcurv_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, int klast,
 		     float_sw4* __restrict__ a_u, float_sw4* __restrict__ a_mu,
@@ -50,13 +59,23 @@ void rhs4sgcurv_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, i
 #define bope(i,j) a_bope[i-1+6*(j-1)]
 #define ghcof(i) a_ghcof[i-1]
 
-#pragma omp parallel
    {
    int kstart = kfirst+2;
    if( onesided[4] == 1 )
    {
       kstart = 7;
+++count1;
+cout << "Loop rhs4sgcurv_rev.C line 77, count=" << count1 << endl;
+if (dump1 == true)
+{
+cout << "K indices: k=" << 1 << " <= " << 6 << endl;
+cout << "J indices: j=" << jfirst+2 << " <= " << jlast-2 << endl;
+cout << "I indices: i=" << ifirst+2 << " <= " << ilast-2 << endl;
+cout.flush();
+dump1 = false;
+}
    // SBP Boundary closure terms
+#pragma omp parallel
 #pragma omp for
       for( int k= 1; k <= 6 ; k++ )
 	 for( int j=jfirst+2; j <= jlast-2 ; j++ )
@@ -65,30 +84,33 @@ void rhs4sgcurv_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, i
 	    for( int i=ifirst+2; i <= ilast-2 ; i++ )
 	    {
 // 5 ops                  
-               float_sw4 ijac   = strx(i)*stry(j)/jac(i,j,k);
-               float_sw4 istry  = 1/(stry(j));
-               float_sw4 istrx  = 1/(strx(i));
-	       float_sw4 istrxy = istry*istrx;
+// #define aligndsw4 __declspec(align(64)) double
+#define aligndsw4 double
+               aligndsw4 ijac   = strx(i)*stry(j)/jac(i,j,k);
+               aligndsw4 istry  = 1/(stry(j));
+               aligndsw4 istrx  = 1/(strx(i));
+	       aligndsw4 istrxy = istry*istrx;
 
-               float_sw4 r1 = 0,r2 = 0,r3 = 0;
+               aligndsw4 r1 = 0,r2 = 0,r3 = 0;
 
        // pp derivative (u) (u-eq)
 // 53 ops, tot=58
-	       float_sw4 cof1=(2*mu(i-2,j,k)+la(i-2,j,k))*met(1,i-2,j,k)*met(1,i-2,j,k)
+	       aligndsw4 cof1=(2*mu(i-2,j,k)+la(i-2,j,k))*met(1,i-2,j,k)*met(1,i-2,j,k)
 		  *strx(i-2);
-	       float_sw4 cof2=(2*mu(i-1,j,k)+la(i-1,j,k))*met(1,i-1,j,k)*met(1,i-1,j,k)
+	       aligndsw4 cof2=(2*mu(i-1,j,k)+la(i-1,j,k))*met(1,i-1,j,k)*met(1,i-1,j,k)
 		  *strx(i-1);
-	       float_sw4 cof3=(2*mu(i,j,k)+la(i,j,k))*met(1,i,j,k)*met(1,i,j,k)*strx(i);
-	       float_sw4 cof4=(2*mu(i+1,j,k)+la(i+1,j,k))*met(1,i+1,j,k)*met(1,i+1,j,k)
+	       aligndsw4 cof3=(2*mu(i,j,k)+la(i,j,k))*met(1,i,j,k)*met(1,i,j,k)*strx(i);
+	       aligndsw4 cof4=(2*mu(i+1,j,k)+la(i+1,j,k))*met(1,i+1,j,k)*met(1,i+1,j,k)
 		  *strx(i+1);
-	       float_sw4 cof5=(2*mu(i+2,j,k)+la(i+2,j,k))*met(1,i+2,j,k)*met(1,i+2,j,k)
+	       aligndsw4 cof5=(2*mu(i+2,j,k)+la(i+2,j,k))*met(1,i+2,j,k)*met(1,i+2,j,k)
 		  *strx(i+2);
 
-	       float_sw4 mux1 = cof2 -tf*(cof3+cof1);
-	       float_sw4 mux2 = cof1 + cof4+3*(cof3+cof2);
-	       float_sw4 mux3 = cof2 + cof5+3*(cof4+cof3);
-	       float_sw4 mux4 = cof4-tf*(cof3+cof5);
+	       aligndsw4 mux1 = cof2 -tf*(cof3+cof1);
+	       aligndsw4 mux2 = cof1 + cof4+3*(cof3+cof2);
+	       aligndsw4 mux3 = cof2 + cof5+3*(cof4+cof3);
+	       aligndsw4 mux4 = cof4-tf*(cof3+cof5);
 
+#if 0
 	       r1 = r1 + i6* (
 			      mux1*(u(1,i-2,j,k)-u(1,i,j,k)) + 
 			      mux2*(u(1,i-1,j,k)-u(1,i,j,k)) + 
@@ -192,7 +214,7 @@ void rhs4sgcurv_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, i
 	       // All rr-derivatives at once
 	       // averaging the coefficient
 // 54*8*8+25*8 = 3656 ops, tot=3939
-	       float_sw4 mucofu2, mucofuv, mucofuw, mucofvw, mucofv2, mucofw2;
+	       aligndsw4 mucofu2, mucofuv, mucofuw, mucofvw, mucofv2, mucofw2;
 	       for( int q=1 ; q <= 8 ; q++ )
 	       {
 		  mucofu2=0;
@@ -226,6 +248,7 @@ void rhs4sgcurv_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, i
 		  r3 += istry*mucofuw*u(1,i,j,q) + istrx*mucofvw*u(2,i,j,q) + istrxy*mucofw2*u(3,i,j,q);
 	       }
 
+#pragma distribute_point
 	       // Ghost point values, only nonzero for k=1.
 // 72 ops., tot=4011
 	       mucofu2 = ghcof(k)*((2*mu(i,j,1)+la(i,j,1))*
@@ -317,9 +340,10 @@ void rhs4sgcurv_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, i
 
       // rp - derivatives
 // 24*8 = 192 ops, tot=4355
-	       float_sw4 dudrm2 = 0, dudrm1=0, dudrp1=0, dudrp2=0;
-	       float_sw4 dvdrm2 = 0, dvdrm1=0, dvdrp1=0, dvdrp2=0;
-	       float_sw4 dwdrm2 = 0, dwdrm1=0, dwdrp1=0, dwdrp2=0;
+	       aligndsw4 dudrm2 = 0, dudrm1=0, dudrp1=0, dudrp2=0;
+	       aligndsw4 dvdrm2 = 0, dvdrm1=0, dvdrp1=0, dvdrp2=0;
+	       aligndsw4 dwdrm2 = 0, dwdrm1=0, dwdrp1=0, dwdrp2=0;
+#pragma distribute_point
 	       for( int q=1 ; q <= 8 ; q++ )
 	       {
 		  dudrm2 += bope(k,q)*u(1,i-2,j,q);
@@ -389,6 +413,7 @@ void rhs4sgcurv_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, i
        +  mu(i-1,j,k)*met(2,i-1,j,k)*met(1,i-1,j,k)*dwdrm1*strx(i-1))
 			    ) );
 
+#pragma distribute_point
       // rq - derivatives
 // 24*8 = 192 ops , tot=4694
 
@@ -474,6 +499,7 @@ void rhs4sgcurv_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, i
        +  mu(i,j-1,k)*met(4,i,j-1,k)*met(1,i,j-1,k)*dvdrm1)
 			    ) )*istrx;
 
+#pragma distribute_point
 	       // pr and qr derivatives at once
 // in loop: 8*(53+53+43) = 1192 ops, tot=6037
 	       for( int q=1 ; q <= 8 ; q++ )
@@ -538,6 +564,7 @@ void rhs4sgcurv_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, i
              c2*(u(2,i,j+2,q)-u(2,i,j-2,q)) +
              c1*(u(2,i,j+1,q)-u(2,i,j-1,q))  )*istrx );
 	       }
+#endif
 
 // 12 ops, tot=6049
 	       lu(1,i,j,k) = a1*lu(1,i,j,k) + r1*ijac;
@@ -545,43 +572,66 @@ void rhs4sgcurv_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, i
 	       lu(3,i,j,k) = a1*lu(3,i,j,k) + r3*ijac;
 	    }
    }
+
+#define min(a,b) (((a) < (b)) ? (a) : (b))
+   // break j loop into nj chunks
+   const int nj=32; // number of chunks
+   const int njsize=((jlast-2)-(jfirst+2)+1)/nj; // may round wrong?
+++count2;
+cout << "Loop rhs4sgcurv_rev.C line 589, count=" << count2 << endl;
+if (dump2 == true)
+{
+cout << "K indices: k=" << kstart << " <= " << klast-2 << endl;
+cout << "J indices: j=" << jfirst+2 << " <= " << jlast-2 << endl;
+cout << "J chunks: nj=" << nj << ", chunk= " << njsize << endl;
+cout << "I indices: i=" << ifirst+2 << " <= " << ilast-2 << endl;
+cout.flush();
+dump2 = false;
+}
+#pragma omp parallel
 #pragma omp for
    for( int k= kstart; k <= klast-2 ; k++ )
-      for( int j=jfirst+2; j <= jlast-2 ; j++ )
+   for(int inj=0; inj < nj; inj++)
+   {
+      const int njfirst = (jfirst+2) + inj*njsize;
+      const int njlast = min(jlast-2, njfirst + njsize-1);
+      for( int j=njfirst; j <= njlast ; j++ )
+      // for( int j=jfirst+2; j <= jlast-2 ; j++ )
 #pragma simd
 #pragma ivdep	 
 	 for( int i=ifirst+2; i <= ilast-2 ; i++ )
 	 {
 // 5 ops
-	    float_sw4 ijac = strx(i)*stry(j)/jac(i,j,k);
-            float_sw4 istry = 1/(stry(j));
-            float_sw4 istrx = 1/(strx(i));
-            float_sw4 istrxy = istry*istrx;
+	    aligndsw4 ijac = strx(i)*stry(j)/jac(i,j,k);
+            aligndsw4 istry = 1/(stry(j));
+            aligndsw4 istrx = 1/(strx(i));
+            aligndsw4 istrxy = istry*istrx;
 
-            float_sw4 r1 = 0;
+            aligndsw4 r1 = 0;
 
 	    // pp derivative (u)
 // 53 ops, tot=58
-	    float_sw4 cof1=(2*mu(i-2,j,k)+la(i-2,j,k))*met(1,i-2,j,k)*met(1,i-2,j,k)
+	    aligndsw4 cof1=(2*mu(i-2,j,k)+la(i-2,j,k))*met(1,i-2,j,k)*met(1,i-2,j,k)
 	       *strx(i-2);
-	    float_sw4 cof2=(2*mu(i-1,j,k)+la(i-1,j,k))*met(1,i-1,j,k)*met(1,i-1,j,k)
+	    aligndsw4 cof2=(2*mu(i-1,j,k)+la(i-1,j,k))*met(1,i-1,j,k)*met(1,i-1,j,k)
 	       *strx(i-1);
-	    float_sw4 cof3=(2*mu(i,j,k)+la(i,j,k))*met(1,i,j,k)*met(1,i,j,k)
+	    aligndsw4 cof3=(2*mu(i,j,k)+la(i,j,k))*met(1,i,j,k)*met(1,i,j,k)
 		  *strx(i);
-	    float_sw4 cof4=(2*mu(i+1,j,k)+la(i+1,j,k))*met(1,i+1,j,k)*met(1,i+1,j,k)
+	    aligndsw4 cof4=(2*mu(i+1,j,k)+la(i+1,j,k))*met(1,i+1,j,k)*met(1,i+1,j,k)
 	     *strx(i+1);
-	    float_sw4 cof5=(2*mu(i+2,j,k)+la(i+2,j,k))*met(1,i+2,j,k)*met(1,i+2,j,k)
+	    aligndsw4 cof5=(2*mu(i+2,j,k)+la(i+2,j,k))*met(1,i+2,j,k)*met(1,i+2,j,k)
 	     *strx(i+2);
-            float_sw4 mux1 = cof2 -tf*(cof3+cof1);
-            float_sw4 mux2 = cof1 + cof4+3*(cof3+cof2);
-            float_sw4 mux3 = cof2 + cof5+3*(cof4+cof3);
-            float_sw4 mux4 = cof4-tf*(cof3+cof5);
+            aligndsw4 mux1 = cof2 -tf*(cof3+cof1);
+            aligndsw4 mux2 = cof1 + cof4+3*(cof3+cof2);
+            aligndsw4 mux3 = cof2 + cof5+3*(cof4+cof3);
+            aligndsw4 mux4 = cof4-tf*(cof3+cof5);
 
             r1 +=  i6* (
                     mux1*(u(1,i-2,j,k)-u(1,i,j,k)) + 
                     mux2*(u(1,i-1,j,k)-u(1,i,j,k)) + 
                     mux3*(u(1,i+1,j,k)-u(1,i,j,k)) +
                     mux4*(u(1,i+2,j,k)-u(1,i,j,k))  )*istry;
+#if 0
 	    // qq derivative (u)
 // 43 ops, tot=101
 	    cof1=(mu(i,j-2,k))*met(1,i,j-2,k)*met(1,i,j-2,k)*stry(j-2);
@@ -842,6 +892,7 @@ void rhs4sgcurv_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, i
 	    lu(1,i,j,k) = a1*lu(1,i,j,k) + r1*ijac;
 // v-equation
 
+#pragma distribute_point
 	    r1 = 0;
 	    // pp derivative (v)
 // 43 ops, tot=816
@@ -950,6 +1001,7 @@ void rhs4sgcurv_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, i
                     mux3*(u(3,i,j,k+1)-u(3,i,j,k)) +
                     mux4*(u(3,i,j,k+2)-u(3,i,j,k))  )*istrx;
 
+#pragma distribute_point
 // pq-derivatives
 // 38 ops, tot=1075
 	    r1 += 
@@ -1127,6 +1179,7 @@ void rhs4sgcurv_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, i
 // 4 ops, tot=1541
 	    lu(2,i,j,k) = a1*lu(2,i,j,k) + r1*ijac;
 	 
+#pragma distribute_point
 // w-equation
 	    r1 = 0;
 // pp derivative (w)
@@ -1165,6 +1218,7 @@ void rhs4sgcurv_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, i
                     mux2*(u(3,i,j-1,k)-u(3,i,j,k)) + 
                     mux3*(u(3,i,j+1,k)-u(3,i,j,k)) +
                     mux4*(u(3,i,j+2,k)-u(3,i,j,k))  )*istrx;
+#pragma distribute_point
 // rr derivative (u)
 // 43 ops, tot=1666
 	    cof1=(mu(i,j,k-2)+la(i,j,k-2))*met(2,i,j,k-2)*met(4,i,j,k-2);
@@ -1203,6 +1257,7 @@ void rhs4sgcurv_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, i
                     mux3*(u(2,i,j,k+1)-u(2,i,j,k)) +
                     mux4*(u(2,i,j,k+2)-u(2,i,j,k))  )*istrx;
 
+#pragma distribute_point
 // rr derivative (w)
 // 83 ops, tot=1792
 	    cof1 = (2*mu(i,j,k-2)+la(i,j,k-2))*met(4,i,j,k-2)*met(4,i,j,k-2) +
@@ -1229,11 +1284,11 @@ void rhs4sgcurv_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, i
                     mux1*(u(3,i,j,k-2)-u(3,i,j,k)) + 
                     mux2*(u(3,i,j,k-1)-u(3,i,j,k)) + 
                     mux3*(u(3,i,j,k+1)-u(3,i,j,k)) +
-                    mux4*(u(3,i,j,k+2)-u(3,i,j,k))  )*istrxy
-// pr-derivatives
+                    mux4*(u(3,i,j,k+2)-u(3,i,j,k))  )*istrxy;
+// pr-derivatives;
 // 86 ops, tot=1878
-// r1 += 
-          + c2*(
+ 	    r1 += 
+            c2*(
        (la(i,j,k+2))*met(4,i,j,k+2)*met(1,i,j,k+2)*(
              c2*(u(1,i+2,j,k+2)-u(1,i-2,j,k+2)) +
              c1*(u(1,i+1,j,k+2)-u(1,i-1,j,k+2))   )*istry 
@@ -1258,11 +1313,11 @@ void rhs4sgcurv_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, i
              c1*(u(1,i+1,j,k-1)-u(1,i-1,j,k-1)) )*istry  
           + mu(i,j,k-1)*met(2,i,j,k-1)*met(1,i,j,k-1)*(
              c2*(u(3,i+2,j,k-1)-u(3,i-2,j,k-1)) +
-             c1*(u(3,i+1,j,k-1)-u(3,i-1,j,k-1)) )*strx(i)*istry  ) )
+             c1*(u(3,i+1,j,k-1)-u(3,i-1,j,k-1)) )*strx(i)*istry  ) );
 // rp derivatives
 // 79 ops, tot=1957
-//   r1 += 
-         + istry*(c2*(
+           r1 += 
+           istry*(c2*(
        (mu(i+2,j,k))*met(4,i+2,j,k)*met(1,i+2,j,k)*(
              c2*(u(1,i+2,j,k+2)-u(1,i+2,j,k-2)) +
              c1*(u(1,i+2,j,k+1)-u(1,i+2,j,k-1))   ) 
@@ -1287,11 +1342,11 @@ void rhs4sgcurv_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, i
              c1*(u(1,i-1,j,k+1)-u(1,i-1,j,k-1)) ) 
           + mu(i-1,j,k)*met(2,i-1,j,k)*met(1,i-1,j,k)*(
              c2*(u(3,i-1,j,k+2)-u(3,i-1,j,k-2)) +
-             c1*(u(3,i-1,j,k+1)-u(3,i-1,j,k-1)) )*strx(i-1)  ) ) )
+             c1*(u(3,i-1,j,k+1)-u(3,i-1,j,k-1)) )*strx(i-1)  ) ) );
 // qr derivatives
 // 86 ops, tot=2043
-//     r1 +=
-         + c2*(
+         r1 +=
+           c2*(
          mu(i,j,k+2)*met(3,i,j,k+2)*met(1,i,j,k+2)*(
              c2*(u(3,i,j+2,k+2)-u(3,i,j-2,k+2)) +
              c1*(u(3,i,j+1,k+2)-u(3,i,j-1,k+2))   )*stry(j)*istrx 
@@ -1316,11 +1371,11 @@ void rhs4sgcurv_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, i
              c1*(u(3,i,j+1,k-1)-u(3,i,j-1,k-1)) )*stry(j)*istrx  
           + la(i,j,k-1)*met(4,i,j,k-1)*met(1,i,j,k-1)*(
              c2*(u(2,i,j+2,k-1)-u(2,i,j-2,k-1)) +
-             c1*(u(2,i,j+1,k-1)-u(2,i,j-1,k-1)) )*istrx  ) )
+             c1*(u(2,i,j+1,k-1)-u(2,i,j-1,k-1)) )*istrx  ) );
 // rq derivatives
 //  79 ops, tot=2122
-//  r1 += 
-          + istrx*(c2*(
+	 r1 += 
+            istrx*(c2*(
          mu(i,j+2,k)*met(3,i,j+2,k)*met(1,i,j+2,k)*(
              c2*(u(3,i,j+2,k+2)-u(3,i,j+2,k-2)) +
              c1*(u(3,i,j+2,k+1)-u(3,i,j+2,k-1))   )*stry(j+2) 
@@ -1346,9 +1401,11 @@ void rhs4sgcurv_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, i
           + mu(i,j-1,k)*met(4,i,j-1,k)*met(1,i,j-1,k)*(
              c2*(u(2,i,j-1,k+2)-u(2,i,j-1,k-2)) +
              c1*(u(2,i,j-1,k+1)-u(2,i,j-1,k-1)) ) ) ) );
+#endif
 // 4 ops, tot=2126
 	    lu(3,i,j,k) = a1*lu(3,i,j,k) + r1*ijac;
 	 }
+     }
    }
 #undef mu
 #undef la

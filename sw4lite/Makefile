@@ -68,6 +68,28 @@ else ifeq ($(findstring quadknl,$(HOSTNAME)),quadknl)
 # for building testil
 #  EXTRA_LINK_FLAGS = -Wl,-rpath=${OTHER_PATH} -L${OTHER_PATH} -lifcore -L${BASIC_PATH} -limf -lsvml -lintlc -lm -ldl 
   openmp = yes
+# For Intel's Endeavor cluster
+else ifeq ($(findstring ewb,$(HOSTNAME)),ewb)
+  FC = mpiifort
+  CXX = mpiicpc
+  CC = icc
+  OMPOPT = -qopenmp
+  MKL_PATH = 
+  OTHER_PATH = 
+  BASIC_PATH = 
+# Format "filename,startline-endline; ..."
+  VECTOR_REPORT_FLAGS = -qopt-report-filter="src/rhs4sgcurv_rev.C,66-553,571-1373;src/rhs4sg_rev.C,85-317,326-569,578-823" -qopt-report-file=vectorizationReport
+#  EXTRA_CXX_FLAGS = -xmic-avx512 -qoverride-limits -g -debug inline-debug-info -qopt-report 5 -qopt-report-phase vec
+  EXTRA_CXX_FLAGS = -xmic-avx512 -qoverride-limits -g -debug inline-debug-info -qopt-report=5 -qopt-report-phase=vec 
+# $(VECTOR_REPORT_FLAGS)
+#  EXTRA_CXX_FLAGS = -xmic-avx512 
+  EXTRA_C_FLAGS = -xmic-avx512
+  EXTRA_FORT_FLAGS = -xmic-avx512 
+  EXTRA_LINK_FLAGS = -lmkl_intel_lp64 -lmkl_core -lmkl_sequential -lpthread -lm -ldl -lifcore -limf -lsvml -lintlc
+#  EXTRA_LINK_FLAGS = -Wl,-rpath=${MKL_PATH} -Wl,-rpath=${BASIC_PATH} -L${MKL_PATH} -lmkl_intel_lp64 -lmkl_core -lmkl_sequential -lpthread -lm -ldl -Wl,-rpath=${OTHER_PATH} -L${OTHER_PATH} -lifcore -L${BASIC_PATH} -limf -lsvml -lintlc
+# for building testil
+#  EXTRA_LINK_FLAGS = -Wl,-rpath=${OTHER_PATH} -L${OTHER_PATH} -lifcore -L${BASIC_PATH} -limf -lsvml -lintlc -lm -ldl 
+  openmp = yes
 #
 # Cori
 else ifeq ($(findstring cori,$(HOSTNAME)),cori)
@@ -119,7 +141,7 @@ ifeq ($(optlevel),DEBUG)
    CFLAGS    = -g
 else
    FFLAGS   = -O3
-   CXXFLAGS = -O3 -I../src
+   CXXFLAGS = -O2 -I../src
    CFLAGS   = -O3
 endif
 

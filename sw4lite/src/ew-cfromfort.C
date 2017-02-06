@@ -13,7 +13,10 @@ void EW::corrfort( int ib, int ie, int jb, int je, int kb, int ke, float_sw4* up
    const size_t npts = static_cast<size_t>((ie-ib+1))*(je-jb+1)*(ke-kb+1);
    if( m_corder )
    {
-#pragma omp parallel for
+// FIXME - tile this and simd the inner loop to guarantee threads
+// don't get weird bounds
+#pragma omp parallel for simd
+#pragma ivdep
       for( size_t i=0 ; i < npts ; i++ )
       {
 	 float_sw4 dt4i12orh = dt4i12/rho[i];
@@ -24,7 +27,8 @@ void EW::corrfort( int ib, int ie, int jb, int je, int kb, int ke, float_sw4* up
    }
    else
    {
-#pragma omp parallel for
+#pragma omp parallel for simd
+#pragma ivdep
       for( size_t i=0 ; i < npts ; i++ )
       {
 	 float_sw4 dt4i12orh = dt4i12/rho[i];
@@ -44,7 +48,10 @@ void EW::predfort( int ib, int ie, int jb, int je, int kb, int ke, float_sw4* up
    if( m_corder )
    {
       // Like this ?
-#pragma omp parallel for
+// FIXME - tile this and simd the inner loop to guarantee threads
+// don't get weird bounds
+#pragma omp parallel for simd
+#pragma ivdep
       for( size_t i=0 ; i < npts ; i++ )
       {
 	 float_sw4 dt2orh = dt2/rho[i];
@@ -71,6 +78,7 @@ void EW::predfort( int ib, int ie, int jb, int je, int kb, int ke, float_sw4* up
    else
    {
 #pragma omp parallel for
+#pragma ivdep
       for( size_t i=0 ; i < npts ; i++ )
       {
 	 float_sw4 dt2orh = dt2/rho[i];
@@ -86,9 +94,10 @@ void EW::dpdmtfort( int ib, int ie, int jb, int je, int kb, int ke, float_sw4* u
 		    float_sw4* u, float_sw4* um, float_sw4* u2, float_sw4 dt2i )
 {
    const size_t npts = static_cast<size_t>((ie-ib+1))*(je-jb+1)*(ke-kb+1);
-#pragma omp parallel for
+#pragma omp parallel for simd
+#pragma ivdep
    for( size_t i = 0 ; i < 3*npts ; i++ )
-      u2[i] = dt2i*(up[i]-2*u[i]+um[i]);
+      u2[i] = dt2i*(up[i]-2.0d*u[i]+um[i]);
    //   if( m_corder )
    //   {
    //      for( size_t i=0 ; i < npts ; i++ )
@@ -746,11 +755,12 @@ void EW::addsgd4fort( int ifirst, int ilast, int jfirst, int jlast,
 #pragma omp parallel for
       for( int k=kfirst+2; k <= klast-2 ; k++ )
 	 for( int j=jfirst+2; j <= jlast-2 ; j++ )
+#pragma simd
+#pragma ivdep
 	    for( int i=ifirst+2; i <= ilast-2 ; i++ )
 	    {
 	       float_sw4 birho=beta/rho(i,j,k);
-#pragma simd
-#pragma ivdep
+
 	       for( int c=0 ; c < 3 ; c++ )
 	       {
 		  up(c,i,j,k) -= birho*( 
@@ -950,6 +960,7 @@ void EW::addsgd4fort_indrev( int ifirst, int ilast, int jfirst, int jlast,
       const size_t nij = ni*(jlast-jfirst+1);
       const size_t npts = nij*(klast-kfirst+1);
 
+// FIXME - move this inside the omp parallel for to reduce overheads?
       for( int c=0 ; c < 3 ; c++ )
 #pragma omp parallel for
       for( int k=kfirst+2; k <= klast-2 ; k++ )

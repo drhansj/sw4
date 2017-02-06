@@ -9,6 +9,7 @@ void rhs4sg( int ifirst, int ilast, int jfirst, int jlast, int kfirst, int klast
 	     float_sw4* a_lu, float_sw4* a_u, float_sw4* a_mu, float_sw4* a_lambda, 
 	     float_sw4 h, float_sw4* a_strx, float_sw4* a_stry, float_sw4* a_strz  )
 {
+#if 0
 
    // This would work to create multi-dimensional C arrays:
    //   float_sw4** b_ar=(float_sw4*)malloc(ni*nj*sizeof(float_sw4*));
@@ -46,11 +47,13 @@ void rhs4sg( int ifirst, int ilast, int jfirst, int jlast, int kfirst, int klast
 
    int k1, k2, kb;
    int i, j, k, q, qb, mb;
-   float_sw4 mux1, mux2, mux3, mux4, muy1, muy2, muy3, muy4, muz1, muz2, muz3, muz4;
-   float_sw4 r1, r2, r3, cof, mucof, mu1zz, mu2zz, mu3zz;
-   float_sw4 lap2mu, u3zip2, u3zip1, u3zim1, u3zim2, lau3zx, mu3xz, u3zjp2, u3zjp1, u3zjm1, u3zjm2;
-   float_sw4 lau3zy, mu3yz, mu1zx, mu2zy, u1zip2, u1zip1, u1zim1, u1zim2;
-   float_sw4 u2zjp2, u2zjp1, u2zjm1, u2zjm2, lau1xz, lau2yz;
+// #define aligndsw4 __declspec(align(64)) double
+#define aligndsw4 double
+   aligndsw4 mux1, mux2, mux3, mux4, muy1, muy2, muy3, muy4, muz1, muz2, muz3, muz4;
+   aligndsw4 r1, r2, r3, cof, mucof, mu1zz, mu2zz, mu3zz;
+   aligndsw4 lap2mu, u3zip2, u3zip1, u3zim1, u3zim2, lau3zx, mu3xz, u3zjp2, u3zjp1, u3zjm1, u3zjm2;
+   aligndsw4 lau3zy, mu3yz, mu1zx, mu2zy, u1zip2, u1zip1, u1zim1, u1zim2;
+   aligndsw4 u2zjp2, u2zjp1, u2zjm1, u2zjm2, lau1xz, lau2yz;
 
    cof = 1.0/(h*h);
    k1 = kfirst+2;
@@ -815,4 +818,5 @@ void rhs4sg( int ifirst, int ilast, int jfirst, int jlast, int kfirst, int klast
 #undef strx
 #undef stry
 #undef strz
+#endif
 }

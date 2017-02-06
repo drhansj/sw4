@@ -1,7 +1,10 @@
 #include "sw4.h"
 
-//#include <iostream>
-//using namespace std;
+#include <iostream>
+using namespace std;
+
+static bool dump = true;
+static int count = 0;
 
 // restrict qualifier does not seem to help much
 //void rhs4sg_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, int klast,
@@ -17,6 +20,12 @@ void rhs4sg_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, int k
 		 float_sw4 h, float_sw4* __restrict__ a_strx, float_sw4* __restrict__ a_stry, 
 		 float_sw4* __restrict__ a_strz )
 {
+   __assume_aligned(a_mu, 64);
+   __assume_aligned(a_strx, 64);
+   __assume_aligned(a_stry, 64);
+   __assume_aligned(a_u, 64);
+   __assume_aligned(a_lambda, 64);
+   //
    // This would work to create multi-dimensional C arrays:
    //   float_sw4** b_ar=(float_sw4*)malloc(ni*nj*sizeof(float_sw4*));
    //   for( int j=0;j<nj;j++)
@@ -55,6 +64,8 @@ void rhs4sg_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, int k
 
    int k1, k2, kb;
    int i, j, k, q, m, qb, mb;
+// FIXME - move this inside parallel region and take out of private
+// based on vtune time
    float_sw4 mux1, mux2, mux3, mux4, muy1, muy2, muy3, muy4, muz1, muz2, muz3, muz4;
    float_sw4 r1, r2, r3, mucof, mu1zz, mu2zz, mu3zz;
    float_sw4 lap2mu, u3zip2, u3zip1, u3zim1, u3zim2, lau3zx, mu3xz, u3zjp2, u3zjp1, u3zjm1, u3zjm2;
@@ -70,16 +81,39 @@ void rhs4sg_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, int k
    k2 = klast-2;
    if( onesided[5] == 1 )
       k2 = nk-6;
-   
+
+++count;
+cout << "Loop rhs4sg_rev.C line 93, count=" << count << endl;
+if (dump == true)
+{
+cout << "K indices: k=" << k1 << " <= " << k2 << endl;
+cout << "J indices: j=" << jfirst+2 << " <= " << jlast-2 << endl;
+cout << "I indices: i=" << ifirst+2 << " <= " << ilast-2 << endl;
+cout.flush();
+dump = false;
+}
+
+// break j loop into nj chunks
+const int nj=32; // number of chunks
+const int njsize=((jlast-2)-(jfirst+2)+1)/nj; // may round wrong?
+ 
 #pragma omp parallel private(k,i,j,mux1,mux2,mux3,mux4,muy1,muy2,muy3,muy4,\
               r1,r2,r3,mucof,mu1zz,mu2zz,mu3zz,lap2mu,q,u3zip2,u3zip1,\
               u3zim1,u3zim2,lau3zx,mu3xz,u3zjp2,u3zjp1,u3zjm1,u3zjm2,lau3zy,\
               mu3yz,mu1zx,u1zip2,u1zip1,u1zim1,u1zim2,\
 	      u2zjp2,u2zjp1,u2zjm1,u2zjm2,mu2zy,lau1xz,lau2yz,kb,qb,mb,muz1,muz2,muz3,muz4)
    {
+
+#define min(a,b) (((a) < (b)) ? (a) : (b))
+
 #pragma omp for
    for( k= k1; k <= k2 ; k++ )
-      for( j=jfirst+2; j <= jlast-2 ; j++ )
+   for( int inj=0; inj <= nj ; inj++ )
+   {
+      const int njfirst = (jfirst+2) + inj*njsize;
+      const int njlast = min(jlast-2, njfirst + njsize-1);
+      for( int j=njfirst; j <= njlast ; j++ )
+      // for( j=jfirst+2; j <= jlast-2 ; j++ )
 #pragma simd
 #pragma ivdep
 	 for( i=ifirst+2; i <= ilast-2 ; i++ )
@@ -180,6 +214,7 @@ void rhs4sg_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, int k
 		  (u(3,i,j,k+2)-u(3,i,j,k)) ) );
 
 
+#if 0 // Comment out this work
 /* Mixed derivatives: */
 /* 29ops /mixed derivative */
 /* 116 ops for r1 */
@@ -311,10 +346,12 @@ void rhs4sg_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, int k
 //	    lu(1,i,j,k) = a1*lu(1,i,j,k) + cof*r1;
 //            lu(2,i,j,k) = a1*lu(2,i,j,k) + cof*r2;
 //            lu(3,i,j,k) = a1*lu(3,i,j,k) + cof*r3;
+#endif
 	    lu(1,i,j,k) =  cof*r1;
             lu(2,i,j,k) =  cof*r2;
             lu(3,i,j,k) =  cof*r3;
 	 }
+      }
       if( onesided[4]==1 )
       {
 #pragma omp for
@@ -361,6 +398,7 @@ void rhs4sg_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, int k
                      muy3*(u(1,i,j+1,k)-u(1,i,j,k)) +
                      muy4*(u(1,i,j+2,k)-u(1,i,j,k)) ) );
 
+#if 0
 		  /* (mu*uz)_z can not be centered */
 		  /* second derivative (mu*u_z)_z at grid point z_k */
 		  /* averaging the coefficient, */
@@ -392,6 +430,7 @@ void rhs4sg_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, int k
 
 		  /* ghost point only influences the first point (k=1) because ghcof(k)=0 for k>=2*/
 		  r1 = r1 + (mu1zz + ghcof(k)*mu(i,j,1)*u(1,i,j,0));
+#endif
 
 		  r2 = i6*(strx(i)*(mux1*(u(2,i-2,j,k)-u(2,i,j,k)) + 
                       mux2*(u(2,i-1,j,k)-u(2,i,j,k)) + 
@@ -421,6 +460,8 @@ void rhs4sg_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, int k
                      muy2*(u(3,i,j-1,k)-u(3,i,j,k)) + 
                      muy3*(u(3,i,j+1,k)-u(3,i,j,k)) +
                      muy4*(u(3,i,j+2,k)-u(3,i,j,k)) ) );
+
+#if 0
 /* ghost point only influences the first point (k=1) because ghcof(k)=0 for k>=2 */
 		  r3 = r3 + (mu3zz + ghcof(k)*(la(i,j,1)+2*mu(i,j,1))*
 			     u(3,i,j,0));
@@ -562,7 +603,7 @@ void rhs4sg_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, int k
                   (-u(2,i,j+2,q) + 8*u(2,i,j+1,q)
                    -8*u(2,i,j-1,q) + u(2,i,j-2,q)) );
             r3 = r3 + stry(j)*lau2yz;
-
+#endif
             lu(1,i,j,k) = a1*lu(1,i,j,k) + cof*r1;
             lu(2,i,j,k) = a1*lu(2,i,j,k) + cof*r2;
             lu(3,i,j,k) = a1*lu(3,i,j,k) + cof*r3;
@@ -616,6 +657,7 @@ void rhs4sg_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, int k
                      muy3*(u(1,i,j+1,k)-u(1,i,j,k)) +
 		   muy4*(u(1,i,j+2,k)-u(1,i,j,k)) ) );
 
+#if 0
     /* all indices ending with 'b' are indices relative to the boundary, going into the domain (1,2,3,...)*/
 		  kb = nk-k+1;
     /* all coefficient arrays (acof, bope, ghcof) should be indexed with these indices */
@@ -643,6 +685,7 @@ void rhs4sg_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, int k
   /* computing the second derivative */
   /* ghost point only influences the first point (k=1) because ghcof(k)=0 for k>=2*/
 		  r1 = r1 + (mu1zz + ghcof(kb)*mu(i,j,nk)*u(1,i,j,nk+1));
+#endif
 
 		  r2 = i6*(strx(i)*(mux1*(u(2,i-2,j,k)-u(2,i,j,k)) + 
                       mux2*(u(2,i-1,j,k)-u(2,i,j,k)) + 
@@ -661,6 +704,7 @@ void rhs4sg_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, int k
                        tf*(la(i,j,k)*stry(j)+la(i,j+2,k)*stry(j+2)))*
 		  (u(2,i,j+2,k)-u(2,i,j,k)) ) );
 
+
 		  /* (mu*vz)_z can not be centered */
 		  /* second derivative (mu*v_z)_z at grid point z_k */
 		  /* averaging the coefficient: already done above */
@@ -674,6 +718,8 @@ void rhs4sg_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, int k
                      muy2*(u(3,i,j-1,k)-u(3,i,j,k)) + 
                      muy3*(u(3,i,j+1,k)-u(3,i,j,k)) +
                      muy4*(u(3,i,j+2,k)-u(3,i,j,k)) ) );
+
+#if 0
 		  r3 = r3 + (mu3zz + ghcof(kb)*(la(i,j,nk)+2*mu(i,j,nk))*
 			     u(3,i,j,nk+1));
 
@@ -742,6 +788,7 @@ void rhs4sg_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, int k
                              8*(-u(1,i-1,j+1,k)+u(1,i+1,j+1,k))) ) - (
                         la(i,j+2,k)*(u(1,i-2,j+2,k)-u(1,i+2,j+2,k)+
 				     8*(-u(1,i-1,j+2,k)+u(1,i+1,j+2,k))) )) );
+
 	    /* (la*w_z)_y : NOT CENTERED */
             u3zjp2=0;
             u3zjp1=0;
@@ -816,7 +863,7 @@ void rhs4sg_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, int k
                    -8*u(2,i,j-1,nk-qb+1) + u(2,i,j-2,nk-qb+1)) );
 	    }
             r3 = r3 + stry(j)*lau2yz;
-
+#endif
             lu(1,i,j,k) = a1*lu(1,i,j,k) + cof*r1;
             lu(2,i,j,k) = a1*lu(2,i,j,k) + cof*r2;
             lu(3,i,j,k) = a1*lu(3,i,j,k) + cof*r3;
