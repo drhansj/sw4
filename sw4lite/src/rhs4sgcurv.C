@@ -6,7 +6,6 @@ void rhs4sgcurv( int ifirst, int ilast, int jfirst, int jlast, int kfirst, int k
 		 int* onesided, float_sw4* __restrict__ a_acof, float_sw4* __restrict__ a_bope,
 		 float_sw4* __restrict__ a_ghcof, float_sw4* __restrict__ a_strx, float_sw4* __restrict__ a_stry )
 {
-#if 0
 //      subroutine CURVILINEAR4SG( ifirst, ilast, jfirst, jlast, kfirst,
 //     *                         klast, u, mu, la, met, jac, lu, 
 //     *                         onesided, acof, bope, ghcof, strx, stry,
@@ -1373,5 +1372,4 @@ void rhs4sgcurv( int ifirst, int ilast, int jfirst, int jlast, int kfirst, int k
 #undef acof
 #undef bope
 #undef ghcof
-#endif
 }

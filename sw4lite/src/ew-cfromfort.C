@@ -13,8 +13,6 @@ void EW::corrfort( int ib, int ie, int jb, int je, int kb, int ke, float_sw4* up
    const size_t npts = static_cast<size_t>((ie-ib+1))*(je-jb+1)*(ke-kb+1);
    if( m_corder )
    {
-// FIXME - tile this and simd the inner loop to guarantee threads
-// don't get weird bounds
 #pragma omp parallel for simd
 #pragma ivdep
       for( size_t i=0 ; i < npts ; i++ )
@@ -48,9 +46,7 @@ void EW::predfort( int ib, int ie, int jb, int je, int kb, int ke, float_sw4* up
    if( m_corder )
    {
       // Like this ?
-// FIXME - tile this and simd the inner loop to guarantee threads
-// don't get weird bounds
-#pragma omp parallel for simd
+#pragma omp parallel for
 #pragma ivdep
       for( size_t i=0 ; i < npts ; i++ )
       {
@@ -960,7 +956,6 @@ void EW::addsgd4fort_indrev( int ifirst, int ilast, int jfirst, int jlast,
       const size_t nij = ni*(jlast-jfirst+1);
       const size_t npts = nij*(klast-kfirst+1);
 
-// FIXME - move this inside the omp parallel for to reduce overheads?
       for( int c=0 ; c < 3 ; c++ )
 #pragma omp parallel for
       for( int k=kfirst+2; k <= klast-2 ; k++ )

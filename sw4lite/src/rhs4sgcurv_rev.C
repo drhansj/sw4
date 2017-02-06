@@ -1,14 +1,6 @@
 #include "sw4.h"
 #include "stdlib.h"
 
-#include <iostream>
-using namespace std;
-
-static bool dump1 = true;
-static bool dump2 = true;
-static int count1 = 0;
-static int count2 = 0;
-
 void rhs4sgcurv_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, int klast,
 		     float_sw4* __restrict__ a_u, float_sw4* __restrict__ a_mu,
 		     float_sw4* __restrict__ a_lambda, float_sw4* __restrict__ a_met,
@@ -59,23 +51,13 @@ void rhs4sgcurv_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, i
 #define bope(i,j) a_bope[i-1+6*(j-1)]
 #define ghcof(i) a_ghcof[i-1]
 
+#pragma omp parallel
    {
    int kstart = kfirst+2;
    if( onesided[4] == 1 )
    {
       kstart = 7;
-++count1;
-cout << "Loop rhs4sgcurv_rev.C line 77, count=" << count1 << endl;
-if (dump1 == true)
-{
-cout << "K indices: k=" << 1 << " <= " << 6 << endl;
-cout << "J indices: j=" << jfirst+2 << " <= " << jlast-2 << endl;
-cout << "I indices: i=" << ifirst+2 << " <= " << ilast-2 << endl;
-cout.flush();
-dump1 = false;
-}
    // SBP Boundary closure terms
-#pragma omp parallel
 #pragma omp for
       for( int k= 1; k <= 6 ; k++ )
 	 for( int j=jfirst+2; j <= jlast-2 ; j++ )
@@ -110,7 +92,6 @@ dump1 = false;
 	       aligndsw4 mux3 = cof2 + cof5+3*(cof4+cof3);
 	       aligndsw4 mux4 = cof4-tf*(cof3+cof5);
 
-#if 0
 	       r1 = r1 + i6* (
 			      mux1*(u(1,i-2,j,k)-u(1,i,j,k)) + 
 			      mux2*(u(1,i-1,j,k)-u(1,i,j,k)) + 
@@ -564,7 +545,6 @@ dump1 = false;
              c2*(u(2,i,j+2,q)-u(2,i,j-2,q)) +
              c1*(u(2,i,j+1,q)-u(2,i,j-1,q))  )*istrx );
 	       }
-#endif
 
 // 12 ops, tot=6049
 	       lu(1,i,j,k) = a1*lu(1,i,j,k) + r1*ijac;
@@ -575,28 +555,16 @@ dump1 = false;
 
 #define min(a,b) (((a) < (b)) ? (a) : (b))
    // break j loop into nj chunks
-   const int nj=32; // number of chunks
+   const int nj=4; // number of chunks
    const int njsize=((jlast-2)-(jfirst+2)+1)/nj; // may round wrong?
-++count2;
-cout << "Loop rhs4sgcurv_rev.C line 589, count=" << count2 << endl;
-if (dump2 == true)
-{
-cout << "K indices: k=" << kstart << " <= " << klast-2 << endl;
-cout << "J indices: j=" << jfirst+2 << " <= " << jlast-2 << endl;
-cout << "J chunks: nj=" << nj << ", chunk= " << njsize << endl;
-cout << "I indices: i=" << ifirst+2 << " <= " << ilast-2 << endl;
-cout.flush();
-dump2 = false;
-}
-#pragma omp parallel
 #pragma omp for
    for( int k= kstart; k <= klast-2 ; k++ )
    for(int inj=0; inj < nj; inj++)
    {
       const int njfirst = (jfirst+2) + inj*njsize;
       const int njlast = min(jlast-2, njfirst + njsize-1);
-      for( int j=njfirst; j <= njlast ; j++ )
       // for( int j=jfirst+2; j <= jlast-2 ; j++ )
+      for( int j=njfirst; j <= njlast ; j++ )
 #pragma simd
 #pragma ivdep	 
 	 for( int i=ifirst+2; i <= ilast-2 ; i++ )
@@ -631,7 +599,6 @@ dump2 = false;
                     mux2*(u(1,i-1,j,k)-u(1,i,j,k)) + 
                     mux3*(u(1,i+1,j,k)-u(1,i,j,k)) +
                     mux4*(u(1,i+2,j,k)-u(1,i,j,k))  )*istry;
-#if 0
 	    // qq derivative (u)
 // 43 ops, tot=101
 	    cof1=(mu(i,j-2,k))*met(1,i,j-2,k)*met(1,i,j-2,k)*stry(j-2);
@@ -1401,7 +1368,6 @@ dump2 = false;
           + mu(i,j-1,k)*met(4,i,j-1,k)*met(1,i,j-1,k)*(
              c2*(u(2,i,j-1,k+2)-u(2,i,j-1,k-2)) +
              c1*(u(2,i,j-1,k+1)-u(2,i,j-1,k-1)) ) ) ) );
-#endif
 // 4 ops, tot=2126
 	    lu(3,i,j,k) = a1*lu(3,i,j,k) + r1*ijac;
 	 }

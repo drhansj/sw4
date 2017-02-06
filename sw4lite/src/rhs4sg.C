@@ -9,7 +9,6 @@ void rhs4sg( int ifirst, int ilast, int jfirst, int jlast, int kfirst, int klast
 	     float_sw4* a_lu, float_sw4* a_u, float_sw4* a_mu, float_sw4* a_lambda, 
 	     float_sw4 h, float_sw4* a_strx, float_sw4* a_stry, float_sw4* a_strz  )
 {
-#if 0
 
    // This would work to create multi-dimensional C arrays:
    //   float_sw4** b_ar=(float_sw4*)malloc(ni*nj*sizeof(float_sw4*));
@@ -818,5 +817,4 @@ void rhs4sg( int ifirst, int ilast, int jfirst, int jlast, int kfirst, int klast
 #undef strx
 #undef stry
 #undef strz
-#endif
 }

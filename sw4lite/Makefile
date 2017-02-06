@@ -80,8 +80,7 @@ else ifeq ($(findstring ewb,$(HOSTNAME)),ewb)
 # Format "filename,startline-endline; ..."
   VECTOR_REPORT_FLAGS = -qopt-report-filter="src/rhs4sgcurv_rev.C,66-553,571-1373;src/rhs4sg_rev.C,85-317,326-569,578-823" -qopt-report-file=vectorizationReport
 #  EXTRA_CXX_FLAGS = -xmic-avx512 -qoverride-limits -g -debug inline-debug-info -qopt-report 5 -qopt-report-phase vec
-  EXTRA_CXX_FLAGS = -xmic-avx512 -qoverride-limits -g -debug inline-debug-info -qopt-report=5 -qopt-report-phase=vec 
-# $(VECTOR_REPORT_FLAGS)
+  EXTRA_CXX_FLAGS = -xmic-avx512 -qoverride-limits -g -debug inline-debug-info -qopt-report=5 -qopt-report-phase=vec $(VECTOR_REPORT_FLAGS)
 #  EXTRA_CXX_FLAGS = -xmic-avx512 
   EXTRA_C_FLAGS = -xmic-avx512
   EXTRA_FORT_FLAGS = -xmic-avx512 
