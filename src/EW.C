@@ -222,6 +222,7 @@ void F77_FUNC(dgels,DGELS)(char & TRANS, int & M, int & N, int & NRHS, double *A
 					   int*, double*, double*, double*, double*, double*, double*);
 }
 
+// the routine will replace the Fortran routine curvilinear4sg()
 void rhs4sgcurv( int ifirst, int ilast, int jfirst, int jlast, int kfirst, int klast,
 	         double* __restrict__ a_u, double* __restrict__ a_mu, double* __restrict__ a_lambda,
                  double* __restrict__ a_met, double* __restrict__ a_jac, double* __restrict__ a_lu,
@@ -1423,33 +1424,62 @@ void EW::print_execution_times( double times[7] )
 {
    double* time_sums =new double[7*no_of_procs()];
    MPI_Gather( times, 7, MPI_DOUBLE, time_sums, 7, MPI_DOUBLE, 0, MPI_COMM_WORLD );
+   bool printavgs = true;
    if( !mQuiet && proc_zero() )
    {
+      double avgs[7]={0,0,0,0,0,0,0};
+      for( int p= 0 ; p < no_of_procs() ; p++ )
+	 for( int c=0 ; c < 7 ; c++ )
+	    avgs[c] += time_sums[7*p+c];
+      for( int c=0 ; c < 7 ; c++ )
+	 avgs[c] /= no_of_procs();
       cout << "\n----------------------------------------" << endl;
       cout << "          Execution time summary " << endl;
-      cout << "Processor  Total      BC total   Step   Image&Time series  Comm.ref   Comm.bndry BC impose  "
-	   <<endl;
-      cout.setf(ios::left);
-      cout.precision(3);
-      for( int p= 0 ; p < no_of_procs() ; p++ )
+      if( printavgs )
       {
-         cout.width(11);
-         cout << p;
-         cout.width(11);
-	 cout << time_sums[7*p+3];
+	 cout << " Total      BC total   Step   Image&Time series  Comm.ref   Comm.bndry BC impose  " << endl;
 	 cout.width(11);
-	 cout << time_sums[7*p+1];
+	 cout << avgs[3];
 	 cout.width(11);
-	 cout << time_sums[7*p];
+	 cout << avgs[1];
 	 cout.width(11);
-	 cout << time_sums[7*p+2];
+	 cout << avgs[0];
 	 cout.width(11);
-	 cout << time_sums[7*p+4];
+	 cout << avgs[2];
 	 cout.width(11);
-	 cout << time_sums[7*p+5];
+	 cout << avgs[4];
 	 cout.width(11);
-	 cout << time_sums[7*p+6];
-         cout << endl;
+	 cout << avgs[5];
+	 cout.width(11);
+	 cout << avgs[6];
+	 cout << endl;
+      }
+      else
+      {
+	 cout << "Processor  Total      BC total   Step   Image&Time series  Comm.ref   Comm.bndry BC impose  "
+	   <<endl;
+	 cout.setf(ios::left);
+	 cout.precision(3);
+	 for( int p= 0 ; p < no_of_procs() ; p++ )
+	 {
+	    cout.width(11);
+	    cout << p;
+	    cout.width(11);
+	    cout << time_sums[7*p+3];
+	    cout.width(11);
+	    cout << time_sums[7*p+1];
+	    cout.width(11);
+	    cout << time_sums[7*p];
+	    cout.width(11);
+	    cout << time_sums[7*p+2];
+	    cout.width(11);
+	    cout << time_sums[7*p+4];
+	    cout.width(11);
+	    cout << time_sums[7*p+5];
+	    cout.width(11);
+	    cout << time_sums[7*p+6];
+	    cout << endl;
+	 }
       }
       cout.setf(ios::right);
       cout.precision(6);
@@ -3800,14 +3830,14 @@ void EW::evalRHS(vector<Sarray> & a_U, vector<Sarray>& a_Mu, vector<Sarray>& a_L
      onesided_ptr = m_onesided[g];
      char op = '='; // assign Uacc := L_u(u)
      if( usingSupergrid() )
-	// F77_FUNC(curvilinear4sg,CURVILINEAR4SG)(&ifirst, &ilast, &jfirst, &jlast, &kfirst, &klast, 
-	// 				    u_ptr, mu_ptr, la_ptr, met_ptr, jac_ptr,
-	// 				    uacc_ptr, onesided_ptr, m_acof, m_bope, m_ghcof,
-	// 					m_sg_str_x[g], m_sg_str_y[g], &op );
-        rhs4sgcurv(ifirst, ilast, jfirst, jlast, kfirst, klast, 
-                   u_ptr, mu_ptr, la_ptr, met_ptr, jac_ptr,
-                   uacc_ptr, onesided_ptr, m_acof, m_bope, m_ghcof,
-                   m_sg_str_x[g], m_sg_str_y[g], op );
+	F77_FUNC(curvilinear4sg,CURVILINEAR4SG)(&ifirst, &ilast, &jfirst, &jlast, &kfirst, &klast, 
+					    u_ptr, mu_ptr, la_ptr, met_ptr, jac_ptr,
+					    uacc_ptr, onesided_ptr, m_acof, m_bope, m_ghcof,
+						m_sg_str_x[g], m_sg_str_y[g], &op );
+        // rhs4sgcurv(ifirst, ilast, jfirst, jlast, kfirst, klast, 
+        //            u_ptr, mu_ptr, la_ptr, met_ptr, jac_ptr,
+        //            uacc_ptr, onesided_ptr, m_acof, m_bope, m_ghcof,
+        //            m_sg_str_x[g], m_sg_str_y[g], op );
      else
 	F77_FUNC(curvilinear4,CURVILINEAR4)(&ifirst, &ilast, &jfirst, &jlast, &kfirst, &klast, 
 					    u_ptr, mu_ptr, la_ptr, met_ptr, jac_ptr,
@@ -3821,14 +3851,14 @@ void EW::evalRHS(vector<Sarray> & a_U, vector<Sarray>& a_Mu, vector<Sarray>& a_L
           double* mua_ptr     = mMuVE[g][a].c_ptr();
           double* lambdaa_ptr = mLambdaVE[g][a].c_ptr();
           if(  usingSupergrid() )
-	     // F77_FUNC(curvilinear4sg,CURVILINEAR4SG)(&ifirst, &ilast, &jfirst, &jlast, &kfirst, &klast, 
-	     //    			    alpha_ptr, mua_ptr, lambdaa_ptr, met_ptr, jac_ptr,
-	     //    			    uacc_ptr, onesided_ptr, m_acof, m_bope, m_ghcof,
-	     //    				m_sg_str_x[g], m_sg_str_y[g], &op );
-             rhs4sgcurv(ifirst, ilast, jfirst, jlast, kfirst, klast, 
-                        alpha_ptr, mua_ptr, lambdaa_ptr, met_ptr, jac_ptr,
-                        uacc_ptr, onesided_ptr, m_acof, m_bope, m_ghcof,
-                        m_sg_str_x[g], m_sg_str_y[g], op );
+	     F77_FUNC(curvilinear4sg,CURVILINEAR4SG)(&ifirst, &ilast, &jfirst, &jlast, &kfirst, &klast, 
+	        			    alpha_ptr, mua_ptr, lambdaa_ptr, met_ptr, jac_ptr,
+	        			    uacc_ptr, onesided_ptr, m_acof, m_bope, m_ghcof,
+	        				m_sg_str_x[g], m_sg_str_y[g], &op );
+             // rhs4sgcurv(ifirst, ilast, jfirst, jlast, kfirst, klast, 
+             //            alpha_ptr, mua_ptr, lambdaa_ptr, met_ptr, jac_ptr,
+             //            uacc_ptr, onesided_ptr, m_acof, m_bope, m_ghcof,
+             //            m_sg_str_x[g], m_sg_str_y[g], op );
 	  else
 	     F77_FUNC(curvilinear4,CURVILINEAR4)(&ifirst, &ilast, &jfirst, &jlast, &kfirst, &klast, 
 					    alpha_ptr, mua_ptr, lambdaa_ptr, met_ptr, jac_ptr,
