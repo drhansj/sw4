@@ -165,6 +165,11 @@ EW::EW( const string& filename ) :
    mMetersPerLongitude(87721.0),
    mConstMetersPerLongitude(false)
 {
+   countrhs4sg_rev = 0;
+   rhs4sg_min_time = 9999999;
+   rhs4sg_max_time = -1;
+   rhs4sg_tot_time = 0.0;
+
    m_gpu_blocksize[0] = 16;
    m_gpu_blocksize[1] = 16;
    m_gpu_blocksize[2] = 1;
@@ -3036,11 +3041,21 @@ void EW::evalRHS(vector<Sarray> & a_U, vector<Sarray>& a_Mu, vector<Sarray>& a_L
    {
 #ifdef SW4_CROUTINES
       if( m_corder )
+      {
+        EW::countrhs4sg_rev++;
+        double tmp_time = omp_get_wtime();
+        
 	 rhs4sg_rev( m_iStart[g], m_iEnd[g], m_jStart[g], m_jEnd[g], 
 		     m_kStart[g], m_kEnd[g], m_global_nz[g], m_onesided[g],
 		     m_acof, m_bope, m_ghcof, a_Uacc[g].c_ptr(), a_U[g].c_ptr(), 
 		     a_Mu[g].c_ptr(), a_Lambda[g].c_ptr(), mGridSize[g],
 		     m_sg_str_x[g], m_sg_str_y[g], m_sg_str_z[g] );
+
+        tmp_time = omp_get_wtime() - tmp_time;  
+        EW::rhs4sg_tot_time+= tmp_time;        
+        if(tmp_time<EW::rhs4sg_min_time) EW::rhs4sg_min_time = tmp_time;
+        if(tmp_time>EW::rhs4sg_max_time) EW::rhs4sg_max_time = tmp_time;
+      }
       else
 	 rhs4sg( m_iStart[g], m_iEnd[g], m_jStart[g], m_jEnd[g], 
 		 m_kStart[g], m_kEnd[g], m_global_nz[g], m_onesided[g],
@@ -6334,3 +6349,25 @@ void EW::CheckCudaCall(cudaError_t command, const char * commandName, const char
    }
 }
 #endif
+
+EW::~EW(){
+  int rank, size;
+  double rhs4sg_gmax, rhs4sg_gmin, rhs4sg_gtot;
+  int rhs4sg_gcount;
+
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank );
+  MPI_Comm_size(MPI_COMM_WORLD, &size );
+
+  printf("[%d] rhs4sg_rev Calls:%d Max:%f Min:%f Avg:%f\n", rank,
+          countrhs4sg_rev,  rhs4sg_max_time, rhs4sg_min_time, rhs4sg_tot_time/countrhs4sg_rev);
+
+  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Reduce( &rhs4sg_max_time, &rhs4sg_gmax, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+  MPI_Reduce( &rhs4sg_min_time, &rhs4sg_gmin, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
+  MPI_Reduce( &rhs4sg_tot_time, &rhs4sg_gtot, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+  MPI_Reduce( &countrhs4sg_rev, &rhs4sg_gcount, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+  if(rank==0) {
+    printf("################\nSTAT: rhs4sg_rev Calls avg:%d Max:%f Min:%f Avg:%f\n",
+            rhs4sg_gcount/size,  rhs4sg_gmax, rhs4sg_gmin, rhs4sg_gtot/rhs4sg_gcount);
+  }
+}

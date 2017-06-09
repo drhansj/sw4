@@ -26,6 +26,7 @@ class EW
    void timesteploop( vector<Sarray>& U, vector<Sarray>& Um);
    void timeStepLoopdGalerkin();
    EW( const string& filename );
+   ~EW();
 
    int computeEndGridPoint( float_sw4 maxval, float_sw4 h );
    bool startswith(const char begin[], char *line);
@@ -291,6 +292,11 @@ class EW
 
 
    // Variables ----------
+   // timers
+   int countrhs4sg_rev;
+   double rhs4sg_min_time;
+   double rhs4sg_max_time;
+   double rhs4sg_tot_time;
 
    // Grid and domain
    int mNumberOfGrids, mNumberOfCartesianGrids;
