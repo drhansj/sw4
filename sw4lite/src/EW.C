@@ -4902,7 +4902,7 @@ void EW::computeDT()
 	       float_sw4 loceig = (4*mMu[g](i,j,k) + mLambda[g](i,j,k) )/mRho[g](i,j,k);
 	       eigmax = loceig > eigmax ? loceig:eigmax;
 		  //	       dtGP = mCFL*mGridSize[g]/sqrt( loceig );
-		  //	       dtloc = dtloc < dtGP ? dtloc : dtGP;
+//	       dtloc = dtloc < dtGP ? dtloc : dtGP;
 	    }
       float_sw4 ieigmax = 1/sqrt(eigmax);
       dtloc = dtloc < mCFL*mGridSize[g]*ieigmax ? dtloc : mCFL*mGridSize[g]*ieigmax;
