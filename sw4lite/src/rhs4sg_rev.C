@@ -1,7 +1,9 @@
 #include "sw4.h"
-//#ifdef USE_VTUNE  
-//  #include <ittnotify.h>
-//#endif
+#include <mpi.h>
+#include <algorithm>
+#ifdef USE_VTUNE  
+  #include <ittnotify.h>
+#endif
 
 
 void rhs4sg_rev_onesided4( int ifirst, int ilast, int jfirst, int jlast, int kfirst, int klast,
@@ -82,10 +84,10 @@ void rhs4sg_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, int k
    const float_sw4 cof = 1.0/(h*h);
    int jb, je, bsj =6;
 
-//__SSC_MARK(0x111);
-//#ifdef USE_VTUNE  
-//__itt_resume();
-//#endif
+__SSC_MARK(0x111);
+#ifdef USE_VTUNE  
+__itt_resume();
+#endif
 
    k1 = kfirst+2;
    if( onesided[4] == 1 )
@@ -94,6 +96,9 @@ void rhs4sg_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, int k
   if( onesided[5] == 1 )
     k2 = nk-6;
 
+    int jBlock = 8;
+    int kBlock = 4;
+
 #pragma omp parallel private(k,i,j,mux1,mux2,mux3,mux4,muy1,muy2,muy3,muy4,\
               r1,r2,r3,mucof,mu1zz,mu2zz,mu3zz,lap2mu,q,u3zip2,u3zip1,\
               u3zim1,u3zim2,lau3zx,mu3xz,u3zjp2,u3zjp1,u3zjm1,u3zjm2,lau3zy,\
@@ -101,12 +106,14 @@ void rhs4sg_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, int k
 	      u2zjp2,u2zjp1,u2zjm1,u2zjm2,mu2zy,lau1xz,lau2yz,kb,qb,mb,muz1,muz2,muz3,muz4)
    {
 #pragma omp for
-   for( k= k1; k <= k2 ; k++ ) {
+    for (int ktmp = k1; ktmp < k2; ktmp+=kBlock){
+ //  for( k= k1; k <= k2 ; k++ ) {
       for( j=jfirst+2; j <= jlast-2 ; j++ ) {
 #pragma simd
 #pragma ivdep
 	 for( i=ifirst+2; i <= ilast-2 ; i++ )
 	 {
+        for( k=ktmp; k <= std::min(klast-2,ktmp+kBlock) ; k++ ) {
 
  /*from inner_loop_4a, 28x3 = 84 ops */
             mux1 = mu(i-1,j,k)*strx(i-1)-
@@ -337,12 +344,12 @@ void rhs4sg_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, int k
 	    lu(1,i,j,k) =  cof*r1;
             lu(2,i,j,k) =  cof*r2;
             lu(3,i,j,k) =  cof*r3;
-	 }}}
+	 }}}}
    }
-//__SSC_MARK(0x111);
-//#ifdef USE_VTUNE  
-//__itt_pause();
-//#endif
+__SSC_MARK(0x222);
+#ifdef USE_VTUNE  
+__itt_pause();
+#endif
 
 //#pragma omp parallel private(k,i,j,mux1,mux2,mux3,mux4,muy1,muy2,muy3,muy4,\
 //              r1,r2,r3,mucof,mu1zz,mu2zz,mu3zz,lap2mu,q,u3zip2,u3zip1,\

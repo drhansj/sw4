@@ -508,6 +508,7 @@ void EW::processTime(char* buffer)
 //-----------------------------------------------------------------------
 void EW::processTopography(char * buffer )
 {
+//MPI_Barrier(MPI_COMM_WORLD);
    //
    // Note, m_topoFileName, m_topoExtFileName, m_maxIter, m_EFileResolution, m_QueryTyp could
    // have been declared local variables in EW::parseInputFile, and transfered as
@@ -6367,7 +6368,7 @@ EW::~EW(){
   MPI_Reduce( &rhs4sg_tot_time, &rhs4sg_gtot, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
   MPI_Reduce( &countrhs4sg_rev, &rhs4sg_gcount, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
   if(rank==0) {
-    printf("################\nSTAT: rhs4sg_rev Calls avg:%d Max:%f Min:%f Avg:%f\n",
-            rhs4sg_gcount/size,  rhs4sg_gmax, rhs4sg_gmin, rhs4sg_gtot/rhs4sg_gcount);
+    printf("################\nSTAT: rhs4sg_rev Calls avg:%d Max:%f Min:%f Total:%f Avg:%f\n",
+            rhs4sg_gcount/size,  rhs4sg_gmax, rhs4sg_gmin, rhs4sg_gtot, rhs4sg_gtot/rhs4sg_gcount);
   }
 }
