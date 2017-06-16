@@ -93,7 +93,8 @@ else ifeq ($(findstring cori,$(HOSTNAME)),cori)
 #  OPT = -O2
 #  EXTRA_LINK_FLAGS =  # only needs module load cray-mpich
 # Intel compiler:
-  OPT = -O3 -qoverride-limits
+  OPT = -O3
+#  OPT = -O3 -qoverride-limits
   OMPOPT = -qopenmp
   EXTRA_LINK_FLAGS =  -lpthread -lm -ldl -lifcore
   openmp = yes
@@ -105,6 +106,19 @@ else ifeq ($(findstring valhall,$(HOSTNAME)),valhall)
   EXTRA_LINK_FLAGS = -lifcore -lblas -llapack
   openmp = yes
   computername := valhall
+else ifeq ($(findstring ray,$(HOSTNAME)),ray)
+  FC  = mpif90
+  CXX = mpic++
+  OMPOPT = -fopenmp
+  EXTRA_LINK_FLAGS = -lgfortran  -llapack -lblas
+  OPT += -g 
+#  EXTRA_LINK_FLAGS += -L/usr/tcetmp/packages/blas/blas-3.6.0-xlf-15.1.5/lib
+#  EXTRA_LINK_FLAGS += -L/usr/tcetmp/packages/lapack/lapack-3.6.0-xlf-15.1.5/lib	
+  EXTRA_LINK_FLAGS += -L/usr/tcetmp/packages/blas/blas-3.6.0-gfortran-4.8.5/lib
+  EXTRA_LINK_FLAGS += -L/usr/tcetmp/packages/lapack/lapack-3.6.0-gfortran-4.8.5/lib
+  openmp = no
+  debug = no
+  computername := ray
 else
   FC  = mpif90
   CXX = mpic++
@@ -239,7 +253,6 @@ $(builddir)/%.o:src/%.f90
 clean:
 	/bin/mkdir -p $(optdir)
 	/bin/mkdir -p $(debugdir)
-	/bin/mkdir -p optimize_mp_c
-	cd $(optdir); /bin/rm -f sw4lite *.o; cd ../$(debugdir); /bin/rm -f sw4lite *.o; cd ../optimize_mp_c; /bin/rm -f sw4lite *.o
+	cd $(optdir); /bin/rm -f sw4lite *.o; cd ../$(debugdir); /bin/rm -f sw4lite *.o
 
 

@@ -646,6 +646,7 @@ int MaterialIfile::getMaterialID(double lat, double lon, double depth )
       }
       minDepth=maxDepth; // next set of surfaces
    } // end for q
+   
    return materialID;
 }
 
