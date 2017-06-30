@@ -1,4 +1,8 @@
 #include "sw4.h"
+#include<algorithm>
+//#ifdef USE_VTUNE  
+//  #include <ittnotify.h>
+//#endif
 
 void rhs4sgcurv_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, int klast,
 		     float_sw4* __restrict__ a_u, float_sw4* __restrict__ a_mu,
@@ -545,9 +549,19 @@ void rhs4sgcurv_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, i
 	       lu(3,i,j,k) = a1*lu(3,i,j,k) + r3*ijac;
 	    }
    }
+
+
+    int kBlock = 2;
+    int jBlock = 2;
+
+//__SSC_MARK(0x333);
+//#ifdef USE_VTUNE  
+//__itt_resume();
+//#endif
+
 #pragma omp for
-   for( int k= kstart; k <= klast-2 ; k++ )
-      for( int j=jfirst+2; j <= jlast-2 ; j++ )
+   for( int k= kstart; k <= klast-2 ; k++ ){
+      for( int j=jfirst+2; j <= jlast-2 ; j++ ){
 #pragma simd
 #pragma ivdep	 
 	 for( int i=ifirst+2; i <= ilast-2 ; i++ )
@@ -1348,7 +1362,11 @@ void rhs4sgcurv_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, i
              c1*(u(2,i,j-1,k+1)-u(2,i,j-1,k-1)) ) ) ) );
 // 4 ops, tot=2126
 	    lu(3,i,j,k) = a1*lu(3,i,j,k) + r1*ijac;
-	 }
+	 }}}
+//__SSC_MARK(0x444);
+//#ifdef USE_VTUNE  
+//__itt_pause();
+//#endif
    }
 #undef mu
 #undef la
