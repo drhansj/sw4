@@ -1,9 +1,8 @@
 #include "sw4.h"
-#include <mpi.h>
-#include <algorithm>
 #ifdef USE_VTUNE  
   #include <ittnotify.h>
 #endif
+#include <algorithm>
 
 
 void rhs4sg_rev_onesided4( int ifirst, int ilast, int jfirst, int jlast, int kfirst, int klast,
@@ -96,8 +95,24 @@ __itt_resume();
   if( onesided[5] == 1 )
     k2 = nk-6;
 
-    int jBlock = 8;
-    int kBlock = 4;
+      int kBlock = 4;
+      int jBlock = 16;
+      int iBlock = 4;
+
+      float r1_arr1[(k2-k1) * (jlast-jfirst-4) * (ilast-ifirst-4)];
+      float r1_arr2[(k2-k1) * (jlast-jfirst-4) * (ilast-ifirst-4)];
+      float r2_arr1[(k2-k1) * (jlast-jfirst-4) * (ilast-ifirst-4)];
+      float r2_arr2[(k2-k1) * (jlast-jfirst-4) * (ilast-ifirst-4)];
+      float r3_arr1[(k2-k1) * (jlast-jfirst-4) * (ilast-ifirst-4)];
+      float r3_arr2[(k2-k1) * (jlast-jfirst-4) * (ilast-ifirst-4)];
+
+//for (int ktmp = k1; ktmp < k2; ktmp+=kBlock){
+//for (int jtmp = jfirst+2; jtmp < jlast-2; jtmp+=jBlock){
+//for( int itmp = ifirst+2; itmp <= ilast-2 ; itmp += iBlock )
+
+//for( k=ktmp; k <= std::min(k2,ktmp+kBlock) ; k++ ) {
+//for( j=jtmp; j <= std::min(jlast-2,jtmp+jBlock) ; j++ ) {
+//for( i=itmp; i <= std::min(ilast-2,itmp+iBlock) ; i++ ) {
 
 #pragma omp parallel private(k,i,j,mux1,mux2,mux3,mux4,muy1,muy2,muy3,muy4,\
               r1,r2,r3,mucof,mu1zz,mu2zz,mu3zz,lap2mu,q,u3zip2,u3zip1,\
@@ -105,16 +120,13 @@ __itt_resume();
               mu3yz,mu1zx,u1zip2,u1zip1,u1zim1,u1zim2,\
 	      u2zjp2,u2zjp1,u2zjm1,u2zjm2,mu2zy,lau1xz,lau2yz,kb,qb,mb,muz1,muz2,muz3,muz4)
    {
-#pragma omp for
-    for (int ktmp = k1; ktmp < k2; ktmp+=kBlock){
- //  for( k= k1; k <= k2 ; k++ ) {
-      for( j=jfirst+2; j <= jlast-2 ; j++ ) {
+#pragma omp for 
+  for( k= k1; k <= k2 ; k++) {
+      for( j=jfirst+2; j <= jlast-2 ; j++) {
 #pragma simd
 #pragma ivdep
 	 for( i=ifirst+2; i <= ilast-2 ; i++ )
 	 {
-        for( k=ktmp; k <= std::min(klast-2,ktmp+kBlock) ; k++ ) {
-
  /*from inner_loop_4a, 28x3 = 84 ops */
             mux1 = mu(i-1,j,k)*strx(i-1)-
 	       tf*(mu(i,j,k)*strx(i)+mu(i-2,j,k)*strx(i-2));
@@ -210,11 +222,11 @@ __itt_resume();
 		  (u(3,i,j,k+2)-u(3,i,j,k)) ) );
 
 
-/* Mixed derivatives: */
+//* Mixed derivatives: */
 /* 29ops /mixed derivative */
 /* 116 ops for r1 */
 /*   (la*v_y)_x */
-            r1 = r1 + strx(i)*stry(j)*
+            r1 += strx(i)*stry(j)*
                  i144*( la(i-2,j,k)*(u(2,i-2,j-2,k)-u(2,i-2,j+2,k)+
                              8*(-u(2,i-2,j-1,k)+u(2,i-2,j+1,k))) - 8*(
                         la(i-1,j,k)*(u(2,i-1,j-2,k)-u(2,i-1,j+2,k)+
@@ -256,7 +268,7 @@ __itt_resume();
 
 /* 116 ops for r2 */
 /*   (mu*u_y)_x */
-            r2 = r2 + strx(i)*stry(j)*
+            r2 += strx(i)*stry(j)*
                  i144*( mu(i-2,j,k)*(u(1,i-2,j-2,k)-u(1,i-2,j+2,k)+
                              8*(-u(1,i-2,j-1,k)+u(1,i-2,j+1,k))) - 8*(
                         mu(i-1,j,k)*(u(1,i-1,j-2,k)-u(1,i-1,j+2,k)+
@@ -297,7 +309,7 @@ __itt_resume();
 				     8*(-u(3,i,j-1,k+2)+u(3,i,j+1,k+2))) )) ;
 /* 116 ops for r3 */
 /*  (mu*u_z)_x */
-            r3 = r3 + strx(i)*strz(k)*
+            r3 += strx(i)*strz(k)*
                  i144*( mu(i-2,j,k)*(u(1,i-2,j,k-2)-u(1,i-2,j,k+2)+
                              8*(-u(1,i-2,j,k-1)+u(1,i-2,j,k+1))) - 8*(
                         mu(i-1,j,k)*(u(1,i-1,j,k-2)-u(1,i-1,j,k+2)+
@@ -338,18 +350,21 @@ __itt_resume();
 				     8*(-u(2,i,j-1,k+2)+u(2,i,j+1,k+2))) )) ;
 
 /* 9 ops */
-	    lu(1,i,j,k) = a1*lu(1,i,j,k) + cof*r1;
+            lu(1,i,j,k) = a1*lu(1,i,j,k) + cof*r1;
             lu(2,i,j,k) = a1*lu(2,i,j,k) + cof*r2;
             lu(3,i,j,k) = a1*lu(3,i,j,k) + cof*r3;
-	    lu(1,i,j,k) =  cof*r1;
-            lu(2,i,j,k) =  cof*r2;
-            lu(3,i,j,k) =  cof*r3;
-	 }}}}
+	 }}}
+
    }
 __SSC_MARK(0x222);
 #ifdef USE_VTUNE  
 __itt_pause();
 #endif
+   rhs4sg_rev_onesided4(ifirst,ilast,jfirst,jlast,kfirst,klast,
+   nk,onesided, a_acof, a_bope, a_ghcof, a_lu, a_u, a_mu, a_lambda, h, a_strx, a_stry, a_strz );
+
+   rhs4sg_rev_onesided5(ifirst,ilast,jfirst,jlast,kfirst,klast,
+   nk,onesided, a_acof, a_bope, a_ghcof, a_lu, a_u, a_mu, a_lambda, h, a_strx, a_stry, a_strz );
 
 //#pragma omp parallel private(k,i,j,mux1,mux2,mux3,mux4,muy1,muy2,muy3,muy4,\
 //              r1,r2,r3,mucof,mu1zz,mu2zz,mu3zz,lap2mu,q,u3zip2,u3zip1,\
@@ -357,8 +372,6 @@ __itt_pause();
 //              mu3yz,mu1zx,u1zip2,u1zip1,u1zim1,u1zim2,\
 //	      u2zjp2,u2zjp1,u2zjm1,u2zjm2,mu2zy,lau1xz,lau2yz,kb,qb,mb,muz1,muz2,muz3,muz4)
 //   {
-//   rhs4sg_rev_onesided4(ifirst,ilast,jfirst,jlast,kfirst,klast,
-//   nk,onesided, a_acof, a_bope, a_ghcof, a_lu, a_u, a_mu, a_lambda, h, a_strx, a_stry, a_strz );
 
 
 //      if( onesided[4]==1 )
@@ -616,8 +629,6 @@ __itt_pause();
 //      }
 
 
-//   rhs4sg_rev_onesided5(ifirst,ilast,jfirst,jlast,kfirst,klast,
-//   nk,onesided, a_acof, a_bope, a_ghcof, a_lu, a_u, a_mu, a_lambda, h, a_strx, a_stry, a_strz );
 
 //}
 

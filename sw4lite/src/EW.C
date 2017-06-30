@@ -170,6 +170,11 @@ EW::EW( const string& filename ) :
    rhs4sg_max_time = -1;
    rhs4sg_tot_time = 0.0;
 
+   countrhs4sgcurv_rev = 0;
+   rhs4sgcurv_min_time = 9999999;
+   rhs4sgcurv_max_time = -1;
+   rhs4sgcurv_tot_time = 0.0;
+
    m_gpu_blocksize[0] = 16;
    m_gpu_blocksize[1] = 16;
    m_gpu_blocksize[2] = 1;
@@ -2440,7 +2445,6 @@ void EW::timesteploop( vector<Sarray>& U, vector<Sarray>& Um )
       if( retval != cudaSuccess )
 	 cout << "Error in memcpy to dev_F in timestep loop retval = " <<
 	    cudaGetErrorString(retval) << endl;
-      //}
 #endif
 
 // save initial data on receiver records
@@ -3088,10 +3092,20 @@ void EW::evalRHS(vector<Sarray> & a_U, vector<Sarray>& a_Mu, vector<Sarray>& a_L
       char op = '=';    // Assign Uacc := L(u)
 #ifdef SW4_CROUTINES
       if( m_corder )
+      {
+        EW::countrhs4sgcurv_rev++;
+        double tmp_time = omp_get_wtime();
+
          rhs4sgcurv_rev( m_iStart[g], m_iEnd[g], m_jStart[g], m_jEnd[g], m_kStart[g], m_kEnd[g],
 			 a_U[g].c_ptr(), a_Mu[g].c_ptr(), a_Lambda[g].c_ptr(), mMetric.c_ptr(),
 			 mJ.c_ptr(), a_Uacc[g].c_ptr(), m_onesided[g], m_acof, m_bope, m_ghcof,
 			 m_sg_str_x[g], m_sg_str_y[g] );
+
+        tmp_time = omp_get_wtime() - tmp_time;  
+        EW::rhs4sgcurv_tot_time+= tmp_time;        
+        if(tmp_time<EW::rhs4sgcurv_min_time) EW::rhs4sgcurv_min_time = tmp_time;
+        if(tmp_time>EW::rhs4sgcurv_max_time) EW::rhs4sgcurv_max_time = tmp_time;
+      }
       else
          rhs4sgcurv( m_iStart[g], m_iEnd[g], m_jStart[g], m_jEnd[g], m_kStart[g], m_kEnd[g],
 		     a_U[g].c_ptr(), a_Mu[g].c_ptr(), a_Lambda[g].c_ptr(), mMetric.c_ptr(),
@@ -6070,6 +6084,7 @@ void EW::generate_grid()
   int k;
   for (k=m_kStart[gTop]; k<=m_kEnd[gTop]; k++)
     for (j=m_jStart[gTop]; j<=m_jEnd[gTop]; j++)
+#pragma omp simd
       for (i=m_iStart[gTop]; i<=m_iEnd[gTop]; i++)
       {
 	grid_mapping((float_sw4) i, (float_sw4) j, (float_sw4) k, X0, Y0, Z0);
@@ -6355,20 +6370,32 @@ EW::~EW(){
   int rank, size;
   double rhs4sg_gmax, rhs4sg_gmin, rhs4sg_gtot;
   int rhs4sg_gcount;
+  double rhs4sgcurv_gmax, rhs4sgcurv_gmin, rhs4sgcurv_gtot;
+  int rhs4sgcurv_gcount;
 
   MPI_Comm_rank(MPI_COMM_WORLD, &rank );
   MPI_Comm_size(MPI_COMM_WORLD, &size );
 
-  printf("[%d] rhs4sg_rev Calls:%d Max:%f Min:%f Avg:%f\n", rank,
-          countrhs4sg_rev,  rhs4sg_max_time, rhs4sg_min_time, rhs4sg_tot_time/countrhs4sg_rev);
+//  printf("[%d] rhs4sg_rev Calls:%d Max:%f Min:%f Avg:%f\n", rank,
+//          countrhs4sg_rev,  rhs4sg_max_time, rhs4sg_min_time, rhs4sg_tot_time/countrhs4sg_rev);
+//  printf("[%d] rhs4sgcurv_rev Calls:%d Max:%f Min:%f Avg:%f\n", rank,
+//          countrhs4sgcurv_rev,  rhs4sgcurv_max_time, rhs4sgcurv_min_time, rhs4sgcurv_tot_time/countrhs4sg_rev);
 
   MPI_Barrier(MPI_COMM_WORLD);
   MPI_Reduce( &rhs4sg_max_time, &rhs4sg_gmax, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
   MPI_Reduce( &rhs4sg_min_time, &rhs4sg_gmin, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
   MPI_Reduce( &rhs4sg_tot_time, &rhs4sg_gtot, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
   MPI_Reduce( &countrhs4sg_rev, &rhs4sg_gcount, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+  MPI_Reduce( &rhs4sgcurv_max_time, &rhs4sgcurv_gmax, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+  MPI_Reduce( &rhs4sgcurv_min_time, &rhs4sgcurv_gmin, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
+  MPI_Reduce( &rhs4sgcurv_tot_time, &rhs4sgcurv_gtot, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+  MPI_Reduce( &countrhs4sgcurv_rev, &rhs4sgcurv_gcount, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+
   if(rank==0) {
-    printf("################\nSTAT: rhs4sg_rev Calls avg:%d Max:%f Min:%f Total:%f Avg:%f\n",
+      printf("########## STATS ################\n");
+    printf("rhs4sg_rev : \trhs4sg_rev Calls avg:%d\t Max:%f\t Min:%f\t Total:%f\t Avg:%f\n",
             rhs4sg_gcount/size,  rhs4sg_gmax, rhs4sg_gmin, rhs4sg_gtot, rhs4sg_gtot/rhs4sg_gcount);
+    printf("rhs4sgcurv_rev : rhs4sgcurv_rev Calls avg:%d\t Max:%f\t Min:%f\t Total:%f\t Avg:%f\n",
+            rhs4sgcurv_gcount/size,  rhs4sgcurv_gmax, rhs4sgcurv_gmin, rhs4sgcurv_gtot, rhs4sgcurv_gtot/rhs4sg_gcount);
   }
 }

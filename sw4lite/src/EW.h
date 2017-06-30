@@ -292,11 +292,18 @@ class EW
 
 
    // Variables ----------
-   // timers
+   // timers rhs4sg_rev
    int countrhs4sg_rev;
    double rhs4sg_min_time;
    double rhs4sg_max_time;
    double rhs4sg_tot_time;
+   
+   // timers rhs4sgcurv_rev
+   int countrhs4sgcurv_rev;
+   double rhs4sgcurv_min_time;
+   double rhs4sgcurv_max_time;
+   double rhs4sgcurv_tot_time;
+
 
    // Grid and domain
    int mNumberOfGrids, mNumberOfCartesianGrids;

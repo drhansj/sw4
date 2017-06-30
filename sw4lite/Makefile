@@ -73,7 +73,7 @@ else ifeq ($(findstring quadknl,$(HOSTNAME)),quadknl)
   MKL_PATH = /opt/intel/compilers_and_libraries_2017/linux/mkl/lib/intel64
   OTHER_PATH = /opt/intel/compilers_and_libraries_2017/linux/lib/intel64
   BASIC_PATH = /opt/intel/lib/intel64
-  EXTRA_CXX_FLAGS = -xmic-avx512
+  EXTRA_CXX_FLAGS = -xmic-avx512 
   EXTRA_C_FLAGS = -xmic-avx512
   EXTRA_FORT_FLAGS = -xmic-avx512 
   EXTRA_LINK_FLAGS = -Wl,-rpath=${MKL_PATH} -Wl,-rpath=${BASIC_PATH} -L${MKL_PATH} -lmkl_intel_lp64 -lmkl_core -lmkl_sequential -lpthread -lm -ldl -Wl,-rpath=${OTHER_PATH} -L${OTHER_PATH} -lifcore -L${BASIC_PATH} -limf -lsvml -lintlc
@@ -90,20 +90,21 @@ else ifeq ($(findstring cori,$(HOSTNAME)),cori)
 # Cray compiler:  (requires modules: PrgEnv-cray and cray-mpich)
 # rhs4sgcurv_rev.C gives segfault with -O, try -O1 instead
 # the ftn compiler does not accept -O. Need to specify -O2
- OPT = -O3
  OMPOPT = -qopenmp
 #  EXTRA_LINK_FLAGS =  # only needs module load cray-mpich
 # Intel compiler:
 #  OPT = -O3 -g -qoverride-limits #-xMIC_AVX512 -DUSE_VTUNE #-I${VTUNE_AMPLIFIER_XE_2017_DIR}/include
 #  EXTRA_LINK_FLAGS =  -ldl -lpthread -lm -ldl -dynamic #-lmemkind  #-L${VTUNE_AMPLIFIER_XE_2017_DIR}/lib64 -littnotify
+  OPT = -O3 -g #-xMIC_AVX512 -DUSE_VTUNE -I${VTUNE_AMPLIFIER_XE_2017_DIR}/include
   MKL_PATH = /global/common/cori/software/intel/2018beta/compilers_and_libraries_2018/linux/mkl/lib/intel64
   OTHER_PATH = /global/common/cori/software/intel/2018beta/compilers_and_libraries_2018/linux/lib/intel64
   BASIC_PATH = /opt/intel/lib/intel64
-  EXTRA_CXX_FLAGS = -xmic-avx512
-  EXTRA_C_FLAGS = -xmic-avx512
-  EXTRA_FORT_FLAGS = -xmic-avx512 
+  EXTRA_CXX_FLAGS = -xmic-avx512 -qoverride-limits #-qopt-report=5 -xCORE_AVX2 
+  EXTRA_C_FLAGS = #-xmic-avx512 
+  EXTRA_FORT_FLAGS = #-xmic-avx512 
 #Dynamic Linking of mkl
-  EXTRA_LINK_FLAGS = -Wl,-rpath=${MKL_PATH} -Wl,-rpath=${BASIC_PATH} -L${MKL_PATH} -lmkl_intel_lp64 -lmkl_core -lmkl_sequential -lpthread -lm -ldl -Wl,-rpath=${OTHER_PATH} -L${OTHER_PATH} -lifcore -L${BASIC_PATH} -limf -lsvml -lintlc -dynamic
+  EXTRA_LINK_FLAGS = -Wl,-rpath=${MKL_PATH} -Wl,-rpath=${BASIC_PATH} -L${MKL_PATH} -lmkl_intel_lp64 -lmkl_core -lmkl_sequential -lpthread -lm -ldl -Wl,-rpath=${OTHER_PATH} -L${OTHER_PATH} -lifcore -L${BASIC_PATH} -limf -lsvml -lintlc -dynamic -L${VTUNE_AMPLIFIER_XE_2017_DIR}/lib64 -littnotify
+
 #Static linking of mkl
 # EXTRA_LINK_FLAGS = -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_ilp64.a ${MKLROOT}/lib/intel64/libmkl_intel_thread.a ${MKLROOT}/lib/intel64/libmkl_core.a -Wl,--end-group -liomp5 -lpthread -lm -ldl -dynamic
   openmp = yes

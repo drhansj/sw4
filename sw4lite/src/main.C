@@ -46,29 +46,29 @@ int main( int argc, char** argv )
    //MPI_Init(&argc, &argv);
    int myRank, thread;
    double  time_start, time_end;
-   cpu_set_t coremask;
-   char clbuf[7 * CPU_SETSIZE], hnbuf[64];
+//   cpu_set_t coremask;
+//   char clbuf[7 * CPU_SETSIZE], hnbuf[64];
 
    MPI_Init(&argc, &argv);
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
 
 /*Rahul - adding stuff to print the thread affinity */
-   memset(clbuf, 0, sizeof(clbuf));
-   memset(hnbuf, 0, sizeof(hnbuf));
-   (void)gethostname(hnbuf, sizeof(hnbuf));
-   if(myRank == 0)
-       printf("Printing thread affinity in the form of MPI-Task\t thread-in-MPI_Task\t core-id mapped to thread\n");
-#pragma omp parallel private(thread, coremask, clbuf)
-   {
-     thread = omp_get_thread_num();
-     (void)sched_getaffinity(0, sizeof(coremask), &coremask);
-     cpuset_to_cstr(&coremask, clbuf);
-     #pragma omp barrier
-     printf("MPI-Task %d, thread %d, on %s. (core id = %s)\n",
- 	   myRank, thread, hnbuf, clbuf);
-   }
+//   memset(clbuf, 0, sizeof(clbuf));
+//   memset(hnbuf, 0, sizeof(hnbuf));
+//   (void)gethostname(hnbuf, sizeof(hnbuf));
+//   if(myRank == 0)
+//       printf("Printing thread affinity in the form of MPI-Task\t thread-in-MPI_Task\t core-id mapped to thread\n");
+//#pragma omp parallel private(thread, coremask, clbuf)
+//   {
+//     thread = omp_get_thread_num();
+//     (void)sched_getaffinity(0, sizeof(coremask), &coremask);
+//     cpuset_to_cstr(&coremask, clbuf);
+//     #pragma omp barrier
+//     printf("MPI-Task %d, thread %d, on %s. (core id = %s)\n",
+// 	   myRank, thread, hnbuf, clbuf);
+//   }
 
-   MPI_Barrier(MPI_COMM_WORLD);
+//   MPI_Barrier(MPI_COMM_WORLD);
    time_start = MPI_Wtime();
 
    string filename;
