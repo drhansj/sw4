@@ -93,7 +93,7 @@ else ifeq ($(findstring cori,$(HOSTNAME)),cori)
 #  OPT = -O2
 #  EXTRA_LINK_FLAGS =  # only needs module load cray-mpich
 # Intel compiler:
-  OPT = -O3 -g -mkl -dynamic -I${VTUNE_AMPLIFIER_XE_2017_DIR}/include
+  OPT = -O3 -qoverride-limits -g -mkl -dynamic -I${VTUNE_AMPLIFIER_XE_2017_DIR}/include
 #  OPT = -O3 -qoverride-limits
   OMPOPT = -qopenmp
   EXTRA_LINK_FLAGS = -lpthread -lm -ldl -mkl -dynamic -g -L${VTUNE_AMPLIFIER_XE_2017_DIR}/lib64 -littnotify
