@@ -82,347 +82,409 @@ float_sw4* __restrict__ a_strz )
             mu3yz,mu1zx,u1zip2,u1zip1,u1zim1,u1zim2,\
                 u2zjp2,u2zjp1,u2zjm1,u2zjm2,mu2zy,lau1xz,lau2yz,kb,qb,mb,muz1,muz2,muz3,muz4)
     {
-#pragma omp for collapse(2) nowait // firstprivate(k1,k2,jfirst,jlast,ifirst,ilast)
-        for( k= k1; k <= k2 ; k++ )
-            for( j=jfirst+2; j <= jlast-2 ; j++ )
+#pragma omp for nowait // firstprivate(k1,k2,jfirst,jlast,ifirst,ilast)
+        for( k= k1; k <= k2 ; k++ ){
+            
+            for( j=jfirst+2; j <= jlast-2 ; j++ ){
 #pragma omp simd
 #pragma ivdep
-        for( i=ifirst+2; i <= ilast-2 ; i++ ){
+                for( i=ifirst+2; i <= ilast-2 ; i++ ){
 
-            /* from inner_loop_4a, 28x3 = 84 ops */
-            mux1 = mu(i-1,j,k)*strx(i-1)-
-                tf*(mu(i,j,k)*strx(i)+mu(i-2,j,k)*strx(i-2));
-            mux2 = mu(i-2,j,k)*strx(i-2)+mu(i+1,j,k)*strx(i+1)+
-                3*(mu(i,j,k)*strx(i)+mu(i-1,j,k)*strx(i-1));
-            mux3 = mu(i-1,j,k)*strx(i-1)+mu(i+2,j,k)*strx(i+2)+
-                3*(mu(i+1,j,k)*strx(i+1)+mu(i,j,k)*strx(i));
-            mux4 = mu(i+1,j,k)*strx(i+1)-
-                tf*(mu(i,j,k)*strx(i)+mu(i+2,j,k)*strx(i+2));
+                    /* from inner_loop_4a, 28x3 = 84 ops */
+                    mux1 = mu(i-1,j,k)*strx(i-1)-
+                        tf*(mu(i,j,k)*strx(i)+mu(i-2,j,k)*strx(i-2));
+                    mux2 = mu(i-2,j,k)*strx(i-2)+mu(i+1,j,k)*strx(i+1)+
+                        3*(mu(i,j,k)*strx(i)+mu(i-1,j,k)*strx(i-1));
+                    mux3 = mu(i-1,j,k)*strx(i-1)+mu(i+2,j,k)*strx(i+2)+
+                        3*(mu(i+1,j,k)*strx(i+1)+mu(i,j,k)*strx(i));
+                    mux4 = mu(i+1,j,k)*strx(i+1)-
+                        tf*(mu(i,j,k)*strx(i)+mu(i+2,j,k)*strx(i+2));
 
-            muy1 = mu(i,j-1,k)*stry(j-1)-
-                tf*(mu(i,j,k)*stry(j)+mu(i,j-2,k)*stry(j-2));
-            muy2 = mu(i,j-2,k)*stry(j-2)+mu(i,j+1,k)*stry(j+1)+
-                3*(mu(i,j,k)*stry(j)+mu(i,j-1,k)*stry(j-1));
-            muy3 = mu(i,j-1,k)*stry(j-1)+mu(i,j+2,k)*stry(j+2)+
-                3*(mu(i,j+1,k)*stry(j+1)+mu(i,j,k)*stry(j));
-            muy4 = mu(i,j+1,k)*stry(j+1)-
-                tf*(mu(i,j,k)*stry(j)+mu(i,j+2,k)*stry(j+2));
+                    muy1 = mu(i,j-1,k)*stry(j-1)-
+                        tf*(mu(i,j,k)*stry(j)+mu(i,j-2,k)*stry(j-2));
+                    muy2 = mu(i,j-2,k)*stry(j-2)+mu(i,j+1,k)*stry(j+1)+
+                        3*(mu(i,j,k)*stry(j)+mu(i,j-1,k)*stry(j-1));
+                    muy3 = mu(i,j-1,k)*stry(j-1)+mu(i,j+2,k)*stry(j+2)+
+                        3*(mu(i,j+1,k)*stry(j+1)+mu(i,j,k)*stry(j));
+                    muy4 = mu(i,j+1,k)*stry(j+1)-
+                        tf*(mu(i,j,k)*stry(j)+mu(i,j+2,k)*stry(j+2));
 
-            muz1 = mu(i,j,k-1)*strz(k-1)-
-                tf*(mu(i,j,k)*strz(k)+mu(i,j,k-2)*strz(k-2));
-            muz2 = mu(i,j,k-2)*strz(k-2)+mu(i,j,k+1)*strz(k+1)+
-                3*(mu(i,j,k)*strz(k)+mu(i,j,k-1)*strz(k-1));
-            muz3 = mu(i,j,k-1)*strz(k-1)+mu(i,j,k+2)*strz(k+2)+
-                3*(mu(i,j,k+1)*strz(k+1)+mu(i,j,k)*strz(k));
-            muz4 = mu(i,j,k+1)*strz(k+1)-
-                tf*(mu(i,j,k)*strz(k)+mu(i,j,k+2)*strz(k+2));
+                    muz1 = mu(i,j,k-1)*strz(k-1)-
+                        tf*(mu(i,j,k)*strz(k)+mu(i,j,k-2)*strz(k-2));
+                    muz2 = mu(i,j,k-2)*strz(k-2)+mu(i,j,k+1)*strz(k+1)+
+                        3*(mu(i,j,k)*strz(k)+mu(i,j,k-1)*strz(k-1));
+                    muz3 = mu(i,j,k-1)*strz(k-1)+mu(i,j,k+2)*strz(k+2)+
+                        3*(mu(i,j,k+1)*strz(k+1)+mu(i,j,k)*strz(k));
+                    muz4 = mu(i,j,k+1)*strz(k+1)-
+                        tf*(mu(i,j,k)*strz(k)+mu(i,j,k+2)*strz(k+2));
             
-            /* xx, yy, and zz derivatives:*/
-            r1=0.;
-            r2=0.;
-            r3=0.;
+                    /* xx, yy, and zz derivatives:*/
+                    r1=0.;
             
-            /* 75 ops */
-            /* r1 diag */
-            r1 += i6*( strx(i)*( (2*mux1+la(i-1,j,k)*strx(i-1)-
-                tf*(la(i,j,k)*strx(i)+la(i-2,j,k)*strx(i-2)))*
-                    (u(1,i-2,j,k)-u(1,i,j,k))+
-                        (2*mux2+la(i-2,j,k)*strx(i-2)+la(i+1,j,k)*strx(i+1)+
-                            3*(la(i,j,k)*strx(i)+la(i-1,j,k)*strx(i-1)))*
-                                (u(1,i-1,j,k)-u(1,i,j,k))+ 
-                                    (2*mux3+la(i-1,j,k)*strx(i-1)+la(i+2,j,k)*strx(i+2)+
-                                        3*(la(i+1,j,k)*strx(i+1)+la(i,j,k)*strx(i)))*
-                                            (u(1,i+1,j,k)-u(1,i,j,k))+
-                                                (2*mux4+ la(i+1,j,k)*strx(i+1)-
-                                                    tf*(la(i,j,k)*strx(i)+la(i+2,j,k)*strx(i+2)))*
-                                                        (u(1,i+2,j,k)-u(1,i,j,k)) ) + stry(j)*(
-                                                            muy1*(u(1,i,j-2,k)-u(1,i,j,k)) + 
-                                                                muy2*(u(1,i,j-1,k)-u(1,i,j,k)) + 
-                                                                    muy3*(u(1,i,j+1,k)-u(1,i,j,k)) +
-                                                                        muy4*(u(1,i,j+2,k)-u(1,i,j,k)) ) + strz(k)*(
-                                                                            muz1*(u(1,i,j,k-2)-u(1,i,j,k)) + 
-                                                                                muz2*(u(1,i,j,k-1)-u(1,i,j,k)) + 
-                                                                                    muz3*(u(1,i,j,k+1)-u(1,i,j,k)) +
-                                                                                        muz4*(u(1,i,j,k+2)-u(1,i,j,k)) ) );
-            
-            /* r2 mixed */
-            /*   (mu*u_y)_x */
-            r2 += strx(i)*stry(j)*
-                i144*( mu(i-2,j,k)*(u(1,i-2,j-2,k)-u(1,i-2,j+2,k)+
-                    8*(-u(1,i-2,j-1,k)+u(1,i-2,j+1,k))) - 8*(
-                        mu(i-1,j,k)*(u(1,i-1,j-2,k)-u(1,i-1,j+2,k)+
-                            8*(-u(1,i-1,j-1,k)+u(1,i-1,j+1,k))) )+8*(
-                                mu(i+1,j,k)*(u(1,i+1,j-2,k)-u(1,i+1,j+2,k)+
-                                    8*(-u(1,i+1,j-1,k)+u(1,i+1,j+1,k))) ) - (
-                                        mu(i+2,j,k)*(u(1,i+2,j-2,k)-u(1,i+2,j+2,k)+
-                                            8*(-u(1,i+2,j-1,k)+u(1,i+2,j+1,k))) ));
-            /* (la*u_x)_y */
-            r2 += strx(i)*stry(j)*
-                i144*( la(i,j-2,k)*(u(1,i-2,j-2,k)-u(1,i+2,j-2,k)+
-                    8*(-u(1,i-1,j-2,k)+u(1,i+1,j-2,k))) - 8*(
-                        la(i,j-1,k)*(u(1,i-2,j-1,k)-u(1,i+2,j-1,k)+
-                            8*(-u(1,i-1,j-1,k)+u(1,i+1,j-1,k))) )+8*(
-                                la(i,j+1,k)*(u(1,i-2,j+1,k)-u(1,i+2,j+1,k)+
-                                    8*(-u(1,i-1,j+1,k)+u(1,i+1,j+1,k))) ) - (
-                                        la(i,j+2,k)*(u(1,i-2,j+2,k)-u(1,i+2,j+2,k)+
-                                            8*(-u(1,i-1,j+2,k)+u(1,i+1,j+2,k))) ));
-                                                                                    
-            /* r3 mixed */
-            /*  (mu*u_z)_x */
-            r3 += strx(i)*strz(k)*
-                i144*( mu(i-2,j,k)*(u(1,i-2,j,k-2)-u(1,i-2,j,k+2)+
-                    8*(-u(1,i-2,j,k-1)+u(1,i-2,j,k+1))) - 8*(
-                        mu(i-1,j,k)*(u(1,i-1,j,k-2)-u(1,i-1,j,k+2)+
-                            8*(-u(1,i-1,j,k-1)+u(1,i-1,j,k+1))) )+8*(
-                                mu(i+1,j,k)*(u(1,i+1,j,k-2)-u(1,i+1,j,k+2)+
-                                    8*(-u(1,i+1,j,k-1)+u(1,i+1,j,k+1))) ) - (
-                                        mu(i+2,j,k)*(u(1,i+2,j,k-2)-u(1,i+2,j,k+2)+
-                                            8*(-u(1,i+2,j,k-1)+u(1,i+2,j,k+1))) ));
-            
-            /*   (la*u_x)_z */
-            r3 += strx(i)*strz(k)*
-                i144*( la(i,j,k-2)*(u(1,i-2,j,k-2)-u(1,i+2,j,k-2)+
-                    8*(-u(1,i-1,j,k-2)+u(1,i+1,j,k-2))) - 8*(
-                        la(i,j,k-1)*(u(1,i-2,j,k-1)-u(1,i+2,j,k-1)+
-                            8*(-u(1,i-1,j,k-1)+u(1,i+1,j,k-1))) )+8*(
-                                la(i,j,k+1)*(u(1,i-2,j,k+1)-u(1,i+2,j,k+1)+
-                                    8*(-u(1,i-1,j,k+1)+u(1,i+1,j,k+1))) ) - (
-                                        la(i,j,k+2)*(u(1,i-2,j,k+2)-u(1,i+2,j,k+2)+
-                                            8*(-u(1,i-1,j,k+2)+u(1,i+1,j,k+2))) ));
-            
-            //assign to lu:
-            lu(1,i,j,k) = a1*lu(1,i,j,k) + cof*r1;
-            lu(2,i,j,k) = a1*lu(2,i,j,k) + cof*r2;
-            lu(3,i,j,k) = a1*lu(3,i,j,k) + cof*r3;
-        }
+                    /* 75 ops */
+                    /* r1 diag */
+                    r1 += i6*( strx(i)*( (2*mux1+la(i-1,j,k)*strx(i-1)-
+                        tf*(la(i,j,k)*strx(i)+la(i-2,j,k)*strx(i-2)))*
+                            (u(1,i-2,j,k)-u(1,i,j,k))+
+                                (2*mux2+la(i-2,j,k)*strx(i-2)+la(i+1,j,k)*strx(i+1)+
+                                    3*(la(i,j,k)*strx(i)+la(i-1,j,k)*strx(i-1)))*
+                                        (u(1,i-1,j,k)-u(1,i,j,k))+ 
+                                            (2*mux3+la(i-1,j,k)*strx(i-1)+la(i+2,j,k)*strx(i+2)+
+                                                3*(la(i+1,j,k)*strx(i+1)+la(i,j,k)*strx(i)))*
+                                                    (u(1,i+1,j,k)-u(1,i,j,k))+
+                                                        (2*mux4+ la(i+1,j,k)*strx(i+1)-
+                                                            tf*(la(i,j,k)*strx(i)+la(i+2,j,k)*strx(i+2)))*
+                                                                (u(1,i+2,j,k)-u(1,i,j,k)) ) + stry(j)*(
+                                                                    muy1*(u(1,i,j-2,k)-u(1,i,j,k)) + 
+                                                                        muy2*(u(1,i,j-1,k)-u(1,i,j,k)) + 
+                                                                            muy3*(u(1,i,j+1,k)-u(1,i,j,k)) +
+                                                                                muy4*(u(1,i,j+2,k)-u(1,i,j,k)) ) + strz(k)*(
+                                                                                    muz1*(u(1,i,j,k-2)-u(1,i,j,k)) + 
+                                                                                        muz2*(u(1,i,j,k-1)-u(1,i,j,k)) + 
+                                                                                            muz3*(u(1,i,j,k+1)-u(1,i,j,k)) +
+                                                                                                muz4*(u(1,i,j,k+2)-u(1,i,j,k)) ) );
+                    
+                    //update array
+                    lu(1,i,j,k) = a1*lu(1,i,j,k) + cof*r1;
+                }
+            }
 
-#pragma omp for collapse(2) nowait // firstprivate(k1,k2,jfirst,jlast,ifirst,ilast)
-        for( k= k1; k <= k2 ; k++ )
-            for( j=jfirst+2; j <= jlast-2 ; j++ )
+            for( j=jfirst+2; j <= jlast-2 ; j++ ){
 #pragma omp simd
 #pragma ivdep
-        for( i=ifirst+2; i <= ilast-2 ; i++ ){
-
-            /* from inner_loop_4a, 28x3 = 84 ops */
-            mux1 = mu(i-1,j,k)*strx(i-1)-
-                tf*(mu(i,j,k)*strx(i)+mu(i-2,j,k)*strx(i-2));
-            mux2 = mu(i-2,j,k)*strx(i-2)+mu(i+1,j,k)*strx(i+1)+
-                3*(mu(i,j,k)*strx(i)+mu(i-1,j,k)*strx(i-1));
-            mux3 = mu(i-1,j,k)*strx(i-1)+mu(i+2,j,k)*strx(i+2)+
-                3*(mu(i+1,j,k)*strx(i+1)+mu(i,j,k)*strx(i));
-            mux4 = mu(i+1,j,k)*strx(i+1)-
-                tf*(mu(i,j,k)*strx(i)+mu(i+2,j,k)*strx(i+2));
-
-            muy1 = mu(i,j-1,k)*stry(j-1)-
-                tf*(mu(i,j,k)*stry(j)+mu(i,j-2,k)*stry(j-2));
-            muy2 = mu(i,j-2,k)*stry(j-2)+mu(i,j+1,k)*stry(j+1)+
-                3*(mu(i,j,k)*stry(j)+mu(i,j-1,k)*stry(j-1));
-            muy3 = mu(i,j-1,k)*stry(j-1)+mu(i,j+2,k)*stry(j+2)+
-                3*(mu(i,j+1,k)*stry(j+1)+mu(i,j,k)*stry(j));
-            muy4 = mu(i,j+1,k)*stry(j+1)-
-                tf*(mu(i,j,k)*stry(j)+mu(i,j+2,k)*stry(j+2));
-
-            muz1 = mu(i,j,k-1)*strz(k-1)-
-                tf*(mu(i,j,k)*strz(k)+mu(i,j,k-2)*strz(k-2));
-            muz2 = mu(i,j,k-2)*strz(k-2)+mu(i,j,k+1)*strz(k+1)+
-                3*(mu(i,j,k)*strz(k)+mu(i,j,k-1)*strz(k-1));
-            muz3 = mu(i,j,k-1)*strz(k-1)+mu(i,j,k+2)*strz(k+2)+
-                3*(mu(i,j,k+1)*strz(k+1)+mu(i,j,k)*strz(k));
-            muz4 = mu(i,j,k+1)*strz(k+1)-
-                tf*(mu(i,j,k)*strz(k)+mu(i,j,k+2)*strz(k+2));
+                for( i=ifirst+2; i <= ilast-2 ; i++ ){
+                    
+                    r2=0.;
+                    
+                    /* r2 mixed */
+                    /*   (mu*u_y)_x */
+                    r2 += strx(i)*stry(j)*
+                        i144*( mu(i-2,j,k)*(u(1,i-2,j-2,k)-u(1,i-2,j+2,k)+
+                            8*(-u(1,i-2,j-1,k)+u(1,i-2,j+1,k))) - 8*(
+                                mu(i-1,j,k)*(u(1,i-1,j-2,k)-u(1,i-1,j+2,k)+
+                                    8*(-u(1,i-1,j-1,k)+u(1,i-1,j+1,k))) )+8*(
+                                        mu(i+1,j,k)*(u(1,i+1,j-2,k)-u(1,i+1,j+2,k)+
+                                            8*(-u(1,i+1,j-1,k)+u(1,i+1,j+1,k))) ) - (
+                                                mu(i+2,j,k)*(u(1,i+2,j-2,k)-u(1,i+2,j+2,k)+
+                                                    8*(-u(1,i+2,j-1,k)+u(1,i+2,j+1,k))) ));
+                    /* (la*u_x)_y */
+                    r2 += strx(i)*stry(j)*
+                        i144*( la(i,j-2,k)*(u(1,i-2,j-2,k)-u(1,i+2,j-2,k)+
+                            8*(-u(1,i-1,j-2,k)+u(1,i+1,j-2,k))) - 8*(
+                                la(i,j-1,k)*(u(1,i-2,j-1,k)-u(1,i+2,j-1,k)+
+                                    8*(-u(1,i-1,j-1,k)+u(1,i+1,j-1,k))) )+8*(
+                                        la(i,j+1,k)*(u(1,i-2,j+1,k)-u(1,i+2,j+1,k)+
+                                            8*(-u(1,i-1,j+1,k)+u(1,i+1,j+1,k))) ) - (
+                                                la(i,j+2,k)*(u(1,i-2,j+2,k)-u(1,i+2,j+2,k)+
+                                                    8*(-u(1,i-1,j+2,k)+u(1,i+1,j+2,k))) ));
+                    
+                    //update array
+                    lu(2,i,j,k) = a1*lu(2,i,j,k) + cof*r2;
+                }
+            }
             
-            /* xx, yy, and zz derivatives:*/
-            r1=0.;
-            r2=0.;
-            r3=0.;
-            
-            /* 75 ops */
-            /* r2 diag */
-            r2 += i6*( strx(i)*(mux1*(u(2,i-2,j,k)-u(2,i,j,k)) + 
-                mux2*(u(2,i-1,j,k)-u(2,i,j,k)) + 
-                    mux3*(u(2,i+1,j,k)-u(2,i,j,k)) +
-                        mux4*(u(2,i+2,j,k)-u(2,i,j,k)) ) + stry(j)*(
-                            (2*muy1+la(i,j-1,k)*stry(j-1)-
-                                tf*(la(i,j,k)*stry(j)+la(i,j-2,k)*stry(j-2)))*
-                                    (u(2,i,j-2,k)-u(2,i,j,k))+
-                                        (2*muy2+la(i,j-2,k)*stry(j-2)+la(i,j+1,k)*stry(j+1)+
-                                            3*(la(i,j,k)*stry(j)+la(i,j-1,k)*stry(j-1)))*
-                                                (u(2,i,j-1,k)-u(2,i,j,k))+ 
-                                                    (2*muy3+la(i,j-1,k)*stry(j-1)+la(i,j+2,k)*stry(j+2)+
-                                                        3*(la(i,j+1,k)*stry(j+1)+la(i,j,k)*stry(j)))*
-                                                            (u(2,i,j+1,k)-u(2,i,j,k))+
-                                                                (2*muy4+la(i,j+1,k)*stry(j+1)-
-                                                                    tf*(la(i,j,k)*stry(j)+la(i,j+2,k)*stry(j+2)))*
-                                                                        (u(2,i,j+2,k)-u(2,i,j,k)) ) + strz(k)*(
-                                                                            muz1*(u(2,i,j,k-2)-u(2,i,j,k)) + 
-                                                                                muz2*(u(2,i,j,k-1)-u(2,i,j,k)) + 
-                                                                                    muz3*(u(2,i,j,k+1)-u(2,i,j,k)) +
-                                                                                        muz4*(u(2,i,j,k+2)-u(2,i,j,k)) ) );
-            
-            /* r1 mixed */
-            /*   (la*v_y)_x */
-            r1 += strx(i)*stry(j)*
-                i144*( la(i-2,j,k)*(u(2,i-2,j-2,k)-u(2,i-2,j+2,k)+
-                    8*(-u(2,i-2,j-1,k)+u(2,i-2,j+1,k))) - 8*(
-                        la(i-1,j,k)*(u(2,i-1,j-2,k)-u(2,i-1,j+2,k)+
-                            8*(-u(2,i-1,j-1,k)+u(2,i-1,j+1,k))) )+8*(
-                                la(i+1,j,k)*(u(2,i+1,j-2,k)-u(2,i+1,j+2,k)+
-                                    8*(-u(2,i+1,j-1,k)+u(2,i+1,j+1,k))) ) - (
-                                        la(i+2,j,k)*(u(2,i+2,j-2,k)-u(2,i+2,j+2,k)+
-                                            8*(-u(2,i+2,j-1,k)+u(2,i+2,j+1,k))) ));
-            /*   (mu*v_x)_y */
-            r1 += strx(i)*stry(j)*       
-                i144*( mu(i,j-2,k)*(u(2,i-2,j-2,k)-u(2,i+2,j-2,k)+
-                    8*(-u(2,i-1,j-2,k)+u(2,i+1,j-2,k))) - 8*(
-                        mu(i,j-1,k)*(u(2,i-2,j-1,k)-u(2,i+2,j-1,k)+
-                            8*(-u(2,i-1,j-1,k)+u(2,i+1,j-1,k))) )+8*(
-                                mu(i,j+1,k)*(u(2,i-2,j+1,k)-u(2,i+2,j+1,k)+
-                                    8*(-u(2,i-1,j+1,k)+u(2,i+1,j+1,k))) ) - (
-                                        mu(i,j+2,k)*(u(2,i-2,j+2,k)-u(2,i+2,j+2,k)+
-                                            8*(-u(2,i-1,j+2,k)+u(2,i+1,j+2,k))) ));
-            
-            /* r3 mixed */
-            /* (mu*v_z)_y */
-            r3 += stry(j)*strz(k)*
-                i144*( mu(i,j-2,k)*(u(2,i,j-2,k-2)-u(2,i,j-2,k+2)+
-                    8*(-u(2,i,j-2,k-1)+u(2,i,j-2,k+1))) - 8*(
-                        mu(i,j-1,k)*(u(2,i,j-1,k-2)-u(2,i,j-1,k+2)+
-                            8*(-u(2,i,j-1,k-1)+u(2,i,j-1,k+1))) )+8*(
-                                mu(i,j+1,k)*(u(2,i,j+1,k-2)-u(2,i,j+1,k+2)+
-                                    8*(-u(2,i,j+1,k-1)+u(2,i,j+1,k+1))) ) - (
-                                        mu(i,j+2,k)*(u(2,i,j+2,k-2)-u(2,i,j+2,k+2)+
-                                            8*(-u(2,i,j+2,k-1)+u(2,i,j+2,k+1))) ));
-            /* (la*v_y)_z */
-            r3 += stry(j)*strz(k)*
-                i144*( la(i,j,k-2)*(u(2,i,j-2,k-2)-u(2,i,j+2,k-2)+
-                    8*(-u(2,i,j-1,k-2)+u(2,i,j+1,k-2))) - 8*(
-                        la(i,j,k-1)*(u(2,i,j-2,k-1)-u(2,i,j+2,k-1)+
-                            8*(-u(2,i,j-1,k-1)+u(2,i,j+1,k-1))) )+8*(
-                                la(i,j,k+1)*(u(2,i,j-2,k+1)-u(2,i,j+2,k+1)+
-                                    8*(-u(2,i,j-1,k+1)+u(2,i,j+1,k+1))) ) - (
-                                        la(i,j,k+2)*(u(2,i,j-2,k+2)-u(2,i,j+2,k+2)+
-                                            8*(-u(2,i,j-1,k+2)+u(2,i,j+1,k+2))) )) ;
-            
-            //assign to lu:
-            lu(1,i,j,k) +=  cof*r1;
-            lu(2,i,j,k) +=  cof*r2;
-            lu(3,i,j,k) +=  cof*r3;
-        }
-
-#pragma omp for collapse(2) nowait // firstprivate(k1,k2,jfirst,jlast,ifirst,ilast)
-        for( k= k1; k <= k2 ; k++ )
-            for( j=jfirst+2; j <= jlast-2 ; j++ )
+            for( j=jfirst+2; j <= jlast-2 ; j++ ){
 #pragma omp simd
 #pragma ivdep
-        for( i=ifirst+2; i <= ilast-2 ; i++ ){
-
-            /* from inner_loop_4a, 28x3 = 84 ops */
-            mux1 = mu(i-1,j,k)*strx(i-1)-
-                tf*(mu(i,j,k)*strx(i)+mu(i-2,j,k)*strx(i-2));
-            mux2 = mu(i-2,j,k)*strx(i-2)+mu(i+1,j,k)*strx(i+1)+
-                3*(mu(i,j,k)*strx(i)+mu(i-1,j,k)*strx(i-1));
-            mux3 = mu(i-1,j,k)*strx(i-1)+mu(i+2,j,k)*strx(i+2)+
-                3*(mu(i+1,j,k)*strx(i+1)+mu(i,j,k)*strx(i));
-            mux4 = mu(i+1,j,k)*strx(i+1)-
-                tf*(mu(i,j,k)*strx(i)+mu(i+2,j,k)*strx(i+2));
-
-            muy1 = mu(i,j-1,k)*stry(j-1)-
-                tf*(mu(i,j,k)*stry(j)+mu(i,j-2,k)*stry(j-2));
-            muy2 = mu(i,j-2,k)*stry(j-2)+mu(i,j+1,k)*stry(j+1)+
-                3*(mu(i,j,k)*stry(j)+mu(i,j-1,k)*stry(j-1));
-            muy3 = mu(i,j-1,k)*stry(j-1)+mu(i,j+2,k)*stry(j+2)+
-                3*(mu(i,j+1,k)*stry(j+1)+mu(i,j,k)*stry(j));
-            muy4 = mu(i,j+1,k)*stry(j+1)-
-                tf*(mu(i,j,k)*stry(j)+mu(i,j+2,k)*stry(j+2));
-
-            muz1 = mu(i,j,k-1)*strz(k-1)-
-                tf*(mu(i,j,k)*strz(k)+mu(i,j,k-2)*strz(k-2));
-            muz2 = mu(i,j,k-2)*strz(k-2)+mu(i,j,k+1)*strz(k+1)+
-                3*(mu(i,j,k)*strz(k)+mu(i,j,k-1)*strz(k-1));
-            muz3 = mu(i,j,k-1)*strz(k-1)+mu(i,j,k+2)*strz(k+2)+
-                3*(mu(i,j,k+1)*strz(k+1)+mu(i,j,k)*strz(k));
-            muz4 = mu(i,j,k+1)*strz(k+1)-
-                tf*(mu(i,j,k)*strz(k)+mu(i,j,k+2)*strz(k+2));
+                for( i=ifirst+2; i <= ilast-2 ; i++ ){
+                    
+                    r3=0.;
+                    
+                    /* r3 mixed */
+                    /*  (mu*u_z)_x */
+                    r3 += strx(i)*strz(k)*
+                        i144*( mu(i-2,j,k)*(u(1,i-2,j,k-2)-u(1,i-2,j,k+2)+
+                            8*(-u(1,i-2,j,k-1)+u(1,i-2,j,k+1))) - 8*(
+                                mu(i-1,j,k)*(u(1,i-1,j,k-2)-u(1,i-1,j,k+2)+
+                                    8*(-u(1,i-1,j,k-1)+u(1,i-1,j,k+1))) )+8*(
+                                        mu(i+1,j,k)*(u(1,i+1,j,k-2)-u(1,i+1,j,k+2)+
+                                            8*(-u(1,i+1,j,k-1)+u(1,i+1,j,k+1))) ) - (
+                                                mu(i+2,j,k)*(u(1,i+2,j,k-2)-u(1,i+2,j,k+2)+
+                                                    8*(-u(1,i+2,j,k-1)+u(1,i+2,j,k+1))) ));
             
-            /* xx, yy, and zz derivatives:*/
-            r1=0.;
-            r2=0.;
-            r3=0.;
+                    /*   (la*u_x)_z */
+                    r3 += strx(i)*strz(k)*
+                        i144*( la(i,j,k-2)*(u(1,i-2,j,k-2)-u(1,i+2,j,k-2)+
+                            8*(-u(1,i-1,j,k-2)+u(1,i+1,j,k-2))) - 8*(
+                                la(i,j,k-1)*(u(1,i-2,j,k-1)-u(1,i+2,j,k-1)+
+                                    8*(-u(1,i-1,j,k-1)+u(1,i+1,j,k-1))) )+8*(
+                                        la(i,j,k+1)*(u(1,i-2,j,k+1)-u(1,i+2,j,k+1)+
+                                            8*(-u(1,i-1,j,k+1)+u(1,i+1,j,k+1))) ) - (
+                                                la(i,j,k+2)*(u(1,i-2,j,k+2)-u(1,i+2,j,k+2)+
+                                                    8*(-u(1,i-1,j,k+2)+u(1,i+1,j,k+2))) ));
+                    
+                    //update array
+                    lu(3,i,j,k) = a1*lu(3,i,j,k) + cof*r3;
+                }
+            }
             
-            /* r3 diag */
-            /* 75 ops */
-            r3 += i6*( strx(i)*(mux1*(u(3,i-2,j,k)-u(3,i,j,k)) + 
-                mux2*(u(3,i-1,j,k)-u(3,i,j,k)) + 
-                    mux3*(u(3,i+1,j,k)-u(3,i,j,k)) +
-                        mux4*(u(3,i+2,j,k)-u(3,i,j,k))  ) + stry(j)*(
-                            muy1*(u(3,i,j-2,k)-u(3,i,j,k)) + 
-                                muy2*(u(3,i,j-1,k)-u(3,i,j,k)) + 
-                                    muy3*(u(3,i,j+1,k)-u(3,i,j,k)) +
-                                        muy4*(u(3,i,j+2,k)-u(3,i,j,k)) ) + strz(k)*(
-                                            (2*muz1+la(i,j,k-1)*strz(k-1)-
-                                                tf*(la(i,j,k)*strz(k)+la(i,j,k-2)*strz(k-2)))*
-                                                    (u(3,i,j,k-2)-u(3,i,j,k))+
-                                                        (2*muz2+la(i,j,k-2)*strz(k-2)+la(i,j,k+1)*strz(k+1)+
-                                                            3*(la(i,j,k)*strz(k)+la(i,j,k-1)*strz(k-1)))*
-                                                                (u(3,i,j,k-1)-u(3,i,j,k))+ 
-                                                                    (2*muz3+la(i,j,k-1)*strz(k-1)+la(i,j,k+2)*strz(k+2)+
-                                                                        3*(la(i,j,k+1)*strz(k+1)+la(i,j,k)*strz(k)))*
-                                                                            (u(3,i,j,k+1)-u(3,i,j,k))+
-                                                                                (2*muz4+la(i,j,k+1)*strz(k+1)-
-                                                                                    tf*(la(i,j,k)*strz(k)+la(i,j,k+2)*strz(k+2)))*
-                                                                                        (u(3,i,j,k+2)-u(3,i,j,k)) ) );
-            
-            /* r1 mixed */
-            /*   (la*w_z)_x */
-            r1 += strx(i)*strz(k)*       
-                i144*( la(i-2,j,k)*(u(3,i-2,j,k-2)-u(3,i-2,j,k+2)+
-                    8*(-u(3,i-2,j,k-1)+u(3,i-2,j,k+1))) - 8*(
-                        la(i-1,j,k)*(u(3,i-1,j,k-2)-u(3,i-1,j,k+2)+
-                            8*(-u(3,i-1,j,k-1)+u(3,i-1,j,k+1))) )+8*(
-                                la(i+1,j,k)*(u(3,i+1,j,k-2)-u(3,i+1,j,k+2)+
-                                    8*(-u(3,i+1,j,k-1)+u(3,i+1,j,k+1))) ) - (
-                                        la(i+2,j,k)*(u(3,i+2,j,k-2)-u(3,i+2,j,k+2)+
-                                            8*(-u(3,i+2,j,k-1)+u(3,i+2,j,k+1))) ));
-            /*   (mu*w_x)_z */
-            r1 += strx(i)*strz(k)*       
-                i144*( mu(i,j,k-2)*(u(3,i-2,j,k-2)-u(3,i+2,j,k-2)+
-                    8*(-u(3,i-1,j,k-2)+u(3,i+1,j,k-2))) - 8*(
-                        mu(i,j,k-1)*(u(3,i-2,j,k-1)-u(3,i+2,j,k-1)+
-                            8*(-u(3,i-1,j,k-1)+u(3,i+1,j,k-1))) )+8*(
-                                mu(i,j,k+1)*(u(3,i-2,j,k+1)-u(3,i+2,j,k+1)+
-                                    8*(-u(3,i-1,j,k+1)+u(3,i+1,j,k+1))) ) - (
-                                        mu(i,j,k+2)*(u(3,i-2,j,k+2)-u(3,i+2,j,k+2)+
-                                            8*(-u(3,i-1,j,k+2)+u(3,i+1,j,k+2))) ));
-            
-            /* r2 mixed */
-            /* (la*w_z)_y */
-            r2 += stry(j)*strz(k)*
-                i144*( la(i,j-2,k)*(u(3,i,j-2,k-2)-u(3,i,j-2,k+2)+
-                    8*(-u(3,i,j-2,k-1)+u(3,i,j-2,k+1))) - 8*(
-                        la(i,j-1,k)*(u(3,i,j-1,k-2)-u(3,i,j-1,k+2)+
-                            8*(-u(3,i,j-1,k-1)+u(3,i,j-1,k+1))) )+8*(
-                                la(i,j+1,k)*(u(3,i,j+1,k-2)-u(3,i,j+1,k+2)+
-                                    8*(-u(3,i,j+1,k-1)+u(3,i,j+1,k+1))) ) - (
-                                        la(i,j+2,k)*(u(3,i,j+2,k-2)-u(3,i,j+2,k+2)+
-                                            8*(-u(3,i,j+2,k-1)+u(3,i,j+2,k+1))) ));
-            /* (mu*w_y)_z */
-            r2 += stry(j)*strz(k)*
-                i144*( mu(i,j,k-2)*(u(3,i,j-2,k-2)-u(3,i,j+2,k-2)+
-                    8*(-u(3,i,j-1,k-2)+u(3,i,j+1,k-2))) - 8*(
-                        mu(i,j,k-1)*(u(3,i,j-2,k-1)-u(3,i,j+2,k-1)+
-                            8*(-u(3,i,j-1,k-1)+u(3,i,j+1,k-1))) )+8*(
-                                mu(i,j,k+1)*(u(3,i,j-2,k+1)-u(3,i,j+2,k+1)+
-                                    8*(-u(3,i,j-1,k+1)+u(3,i,j+1,k+1))) ) - (
-                                        mu(i,j,k+2)*(u(3,i,j-2,k+2)-u(3,i,j+2,k+2)+
-                                            8*(-u(3,i,j-1,k+2)+u(3,i,j+1,k+2))) ));
 
-            /* 9 ops */
-            //lu(1,i,j,k) = a1*lu(1,i,j,k) + cof*r1;
-            //lu(2,i,j,k) = a1*lu(2,i,j,k) + cof*r2;
-            //lu(3,i,j,k) = a1*lu(3,i,j,k) + cof*r3;
-            lu(1,i,j,k) +=  cof*r1;
-            lu(2,i,j,k) +=  cof*r2;
-            lu(3,i,j,k) +=  cof*r3;
+            for( j=jfirst+2; j <= jlast-2 ; j++ ){
+#pragma omp simd
+#pragma ivdep
+                for( i=ifirst+2; i <= ilast-2 ; i++ ){
+
+                    /* from inner_loop_4a, 28x3 = 84 ops */
+                    mux1 = mu(i-1,j,k)*strx(i-1)-
+                        tf*(mu(i,j,k)*strx(i)+mu(i-2,j,k)*strx(i-2));
+                    mux2 = mu(i-2,j,k)*strx(i-2)+mu(i+1,j,k)*strx(i+1)+
+                        3*(mu(i,j,k)*strx(i)+mu(i-1,j,k)*strx(i-1));
+                    mux3 = mu(i-1,j,k)*strx(i-1)+mu(i+2,j,k)*strx(i+2)+
+                        3*(mu(i+1,j,k)*strx(i+1)+mu(i,j,k)*strx(i));
+                    mux4 = mu(i+1,j,k)*strx(i+1)-
+                        tf*(mu(i,j,k)*strx(i)+mu(i+2,j,k)*strx(i+2));
+
+                    muy1 = mu(i,j-1,k)*stry(j-1)-
+                        tf*(mu(i,j,k)*stry(j)+mu(i,j-2,k)*stry(j-2));
+                    muy2 = mu(i,j-2,k)*stry(j-2)+mu(i,j+1,k)*stry(j+1)+
+                        3*(mu(i,j,k)*stry(j)+mu(i,j-1,k)*stry(j-1));
+                    muy3 = mu(i,j-1,k)*stry(j-1)+mu(i,j+2,k)*stry(j+2)+
+                        3*(mu(i,j+1,k)*stry(j+1)+mu(i,j,k)*stry(j));
+                    muy4 = mu(i,j+1,k)*stry(j+1)-
+                        tf*(mu(i,j,k)*stry(j)+mu(i,j+2,k)*stry(j+2));
+
+                    muz1 = mu(i,j,k-1)*strz(k-1)-
+                        tf*(mu(i,j,k)*strz(k)+mu(i,j,k-2)*strz(k-2));
+                    muz2 = mu(i,j,k-2)*strz(k-2)+mu(i,j,k+1)*strz(k+1)+
+                        3*(mu(i,j,k)*strz(k)+mu(i,j,k-1)*strz(k-1));
+                    muz3 = mu(i,j,k-1)*strz(k-1)+mu(i,j,k+2)*strz(k+2)+
+                        3*(mu(i,j,k+1)*strz(k+1)+mu(i,j,k)*strz(k));
+                    muz4 = mu(i,j,k+1)*strz(k+1)-
+                        tf*(mu(i,j,k)*strz(k)+mu(i,j,k+2)*strz(k+2));
+            
+                    /* xx, yy, and zz derivatives:*/
+                    r2=0.;
+            
+                    /* 75 ops */
+                    /* r2 diag */
+                    r2 += i6*( strx(i)*(mux1*(u(2,i-2,j,k)-u(2,i,j,k)) + 
+                        mux2*(u(2,i-1,j,k)-u(2,i,j,k)) + 
+                            mux3*(u(2,i+1,j,k)-u(2,i,j,k)) +
+                                mux4*(u(2,i+2,j,k)-u(2,i,j,k)) ) + stry(j)*(
+                                    (2*muy1+la(i,j-1,k)*stry(j-1)-
+                                        tf*(la(i,j,k)*stry(j)+la(i,j-2,k)*stry(j-2)))*
+                                            (u(2,i,j-2,k)-u(2,i,j,k))+
+                                                (2*muy2+la(i,j-2,k)*stry(j-2)+la(i,j+1,k)*stry(j+1)+
+                                                    3*(la(i,j,k)*stry(j)+la(i,j-1,k)*stry(j-1)))*
+                                                        (u(2,i,j-1,k)-u(2,i,j,k))+ 
+                                                            (2*muy3+la(i,j-1,k)*stry(j-1)+la(i,j+2,k)*stry(j+2)+
+                                                                3*(la(i,j+1,k)*stry(j+1)+la(i,j,k)*stry(j)))*
+                                                                    (u(2,i,j+1,k)-u(2,i,j,k))+
+                                                                        (2*muy4+la(i,j+1,k)*stry(j+1)-
+                                                                            tf*(la(i,j,k)*stry(j)+la(i,j+2,k)*stry(j+2)))*
+                                                                                (u(2,i,j+2,k)-u(2,i,j,k)) ) + strz(k)*(
+                                                                                    muz1*(u(2,i,j,k-2)-u(2,i,j,k)) + 
+                                                                                        muz2*(u(2,i,j,k-1)-u(2,i,j,k)) + 
+                                                                                            muz3*(u(2,i,j,k+1)-u(2,i,j,k)) +
+                                                                                                muz4*(u(2,i,j,k+2)-u(2,i,j,k)) ) );
+                    
+                    //update array
+                    lu(2,i,j,k) += cof*r2;
+                }
+            }
+            
+            for( j=jfirst+2; j <= jlast-2 ; j++ ){
+#pragma omp simd
+#pragma ivdep
+                for( i=ifirst+2; i <= ilast-2 ; i++ ){
+                    
+                    r1 = 0.;
+                    
+                    /* r1 mixed */
+                    /*   (la*v_y)_x */
+                    r1 += strx(i)*stry(j)*
+                        i144*( la(i-2,j,k)*(u(2,i-2,j-2,k)-u(2,i-2,j+2,k)+
+                            8*(-u(2,i-2,j-1,k)+u(2,i-2,j+1,k))) - 8*(
+                                la(i-1,j,k)*(u(2,i-1,j-2,k)-u(2,i-1,j+2,k)+
+                                    8*(-u(2,i-1,j-1,k)+u(2,i-1,j+1,k))) )+8*(
+                                        la(i+1,j,k)*(u(2,i+1,j-2,k)-u(2,i+1,j+2,k)+
+                                            8*(-u(2,i+1,j-1,k)+u(2,i+1,j+1,k))) ) - (
+                                                la(i+2,j,k)*(u(2,i+2,j-2,k)-u(2,i+2,j+2,k)+
+                                                    8*(-u(2,i+2,j-1,k)+u(2,i+2,j+1,k))) ));
+                    /*   (mu*v_x)_y */
+                    r1 += strx(i)*stry(j)*       
+                        i144*( mu(i,j-2,k)*(u(2,i-2,j-2,k)-u(2,i+2,j-2,k)+
+                            8*(-u(2,i-1,j-2,k)+u(2,i+1,j-2,k))) - 8*(
+                                mu(i,j-1,k)*(u(2,i-2,j-1,k)-u(2,i+2,j-1,k)+
+                                    8*(-u(2,i-1,j-1,k)+u(2,i+1,j-1,k))) )+8*(
+                                        mu(i,j+1,k)*(u(2,i-2,j+1,k)-u(2,i+2,j+1,k)+
+                                            8*(-u(2,i-1,j+1,k)+u(2,i+1,j+1,k))) ) - (
+                                                mu(i,j+2,k)*(u(2,i-2,j+2,k)-u(2,i+2,j+2,k)+
+                                                    8*(-u(2,i-1,j+2,k)+u(2,i+1,j+2,k))) ));
+                    
+                    //update array
+                    lu(1,i,j,k) += cof*r1;
+                }
+            }
+            
+            for( j=jfirst+2; j <= jlast-2 ; j++ ){
+#pragma omp simd
+#pragma ivdep
+                for( i=ifirst+2; i <= ilast-2 ; i++ ){
+                    
+                    r3 = 0.;
+                    
+                    /* r3 mixed */
+                    /* (mu*v_z)_y */
+                    r3 += stry(j)*strz(k)*
+                        i144*( mu(i,j-2,k)*(u(2,i,j-2,k-2)-u(2,i,j-2,k+2)+
+                            8*(-u(2,i,j-2,k-1)+u(2,i,j-2,k+1))) - 8*(
+                                mu(i,j-1,k)*(u(2,i,j-1,k-2)-u(2,i,j-1,k+2)+
+                                    8*(-u(2,i,j-1,k-1)+u(2,i,j-1,k+1))) )+8*(
+                                        mu(i,j+1,k)*(u(2,i,j+1,k-2)-u(2,i,j+1,k+2)+
+                                            8*(-u(2,i,j+1,k-1)+u(2,i,j+1,k+1))) ) - (
+                                                mu(i,j+2,k)*(u(2,i,j+2,k-2)-u(2,i,j+2,k+2)+
+                                                    8*(-u(2,i,j+2,k-1)+u(2,i,j+2,k+1))) ));
+                    /* (la*v_y)_z */
+                    r3 += stry(j)*strz(k)*
+                        i144*( la(i,j,k-2)*(u(2,i,j-2,k-2)-u(2,i,j+2,k-2)+
+                            8*(-u(2,i,j-1,k-2)+u(2,i,j+1,k-2))) - 8*(
+                                la(i,j,k-1)*(u(2,i,j-2,k-1)-u(2,i,j+2,k-1)+
+                                    8*(-u(2,i,j-1,k-1)+u(2,i,j+1,k-1))) )+8*(
+                                        la(i,j,k+1)*(u(2,i,j-2,k+1)-u(2,i,j+2,k+1)+
+                                            8*(-u(2,i,j-1,k+1)+u(2,i,j+1,k+1))) ) - (
+                                                la(i,j,k+2)*(u(2,i,j-2,k+2)-u(2,i,j+2,k+2)+
+                                                    8*(-u(2,i,j-1,k+2)+u(2,i,j+1,k+2))) )) ;
+            
+                    //assign to lu:
+                    lu(3,i,j,k) += cof*r3;
+                }
+            }
+
+            for( j=jfirst+2; j <= jlast-2 ; j++ ){
+#pragma omp simd
+#pragma ivdep
+                for( i=ifirst+2; i <= ilast-2 ; i++ ){
+
+                    /* from inner_loop_4a, 28x3 = 84 ops */
+                    mux1 = mu(i-1,j,k)*strx(i-1)-
+                        tf*(mu(i,j,k)*strx(i)+mu(i-2,j,k)*strx(i-2));
+                    mux2 = mu(i-2,j,k)*strx(i-2)+mu(i+1,j,k)*strx(i+1)+
+                        3*(mu(i,j,k)*strx(i)+mu(i-1,j,k)*strx(i-1));
+                    mux3 = mu(i-1,j,k)*strx(i-1)+mu(i+2,j,k)*strx(i+2)+
+                        3*(mu(i+1,j,k)*strx(i+1)+mu(i,j,k)*strx(i));
+                    mux4 = mu(i+1,j,k)*strx(i+1)-
+                        tf*(mu(i,j,k)*strx(i)+mu(i+2,j,k)*strx(i+2));
+
+                    muy1 = mu(i,j-1,k)*stry(j-1)-
+                        tf*(mu(i,j,k)*stry(j)+mu(i,j-2,k)*stry(j-2));
+                    muy2 = mu(i,j-2,k)*stry(j-2)+mu(i,j+1,k)*stry(j+1)+
+                        3*(mu(i,j,k)*stry(j)+mu(i,j-1,k)*stry(j-1));
+                    muy3 = mu(i,j-1,k)*stry(j-1)+mu(i,j+2,k)*stry(j+2)+
+                        3*(mu(i,j+1,k)*stry(j+1)+mu(i,j,k)*stry(j));
+                    muy4 = mu(i,j+1,k)*stry(j+1)-
+                        tf*(mu(i,j,k)*stry(j)+mu(i,j+2,k)*stry(j+2));
+
+                    muz1 = mu(i,j,k-1)*strz(k-1)-
+                        tf*(mu(i,j,k)*strz(k)+mu(i,j,k-2)*strz(k-2));
+                    muz2 = mu(i,j,k-2)*strz(k-2)+mu(i,j,k+1)*strz(k+1)+
+                        3*(mu(i,j,k)*strz(k)+mu(i,j,k-1)*strz(k-1));
+                    muz3 = mu(i,j,k-1)*strz(k-1)+mu(i,j,k+2)*strz(k+2)+
+                        3*(mu(i,j,k+1)*strz(k+1)+mu(i,j,k)*strz(k));
+                    muz4 = mu(i,j,k+1)*strz(k+1)-
+                        tf*(mu(i,j,k)*strz(k)+mu(i,j,k+2)*strz(k+2));
+            
+                    /* xx, yy, and zz derivatives:*/
+                    r3=0.;
+            
+                    /* r3 diag */
+                    /* 75 ops */
+                    r3 += i6*( strx(i)*(mux1*(u(3,i-2,j,k)-u(3,i,j,k)) + 
+                        mux2*(u(3,i-1,j,k)-u(3,i,j,k)) + 
+                            mux3*(u(3,i+1,j,k)-u(3,i,j,k)) +
+                                mux4*(u(3,i+2,j,k)-u(3,i,j,k))  ) + stry(j)*(
+                                    muy1*(u(3,i,j-2,k)-u(3,i,j,k)) + 
+                                        muy2*(u(3,i,j-1,k)-u(3,i,j,k)) + 
+                                            muy3*(u(3,i,j+1,k)-u(3,i,j,k)) +
+                                                muy4*(u(3,i,j+2,k)-u(3,i,j,k)) ) + strz(k)*(
+                                                    (2*muz1+la(i,j,k-1)*strz(k-1)-
+                                                        tf*(la(i,j,k)*strz(k)+la(i,j,k-2)*strz(k-2)))*
+                                                            (u(3,i,j,k-2)-u(3,i,j,k))+
+                                                                (2*muz2+la(i,j,k-2)*strz(k-2)+la(i,j,k+1)*strz(k+1)+
+                                                                    3*(la(i,j,k)*strz(k)+la(i,j,k-1)*strz(k-1)))*
+                                                                        (u(3,i,j,k-1)-u(3,i,j,k))+ 
+                                                                            (2*muz3+la(i,j,k-1)*strz(k-1)+la(i,j,k+2)*strz(k+2)+
+                                                                                3*(la(i,j,k+1)*strz(k+1)+la(i,j,k)*strz(k)))*
+                                                                                    (u(3,i,j,k+1)-u(3,i,j,k))+
+                                                                                        (2*muz4+la(i,j,k+1)*strz(k+1)-
+                                                                                            tf*(la(i,j,k)*strz(k)+la(i,j,k+2)*strz(k+2)))*
+                                                                                                (u(3,i,j,k+2)-u(3,i,j,k)) ) );
+                    
+                    //assign to lu:
+                    lu(3,i,j,k) +=  cof*r3;
+                }
+            }
+            
+            for( j=jfirst+2; j <= jlast-2 ; j++ ){
+#pragma omp simd
+#pragma ivdep
+                for( i=ifirst+2; i <= ilast-2 ; i++ ){
+                    
+                    r1 = 0.;
+                    
+                    /* r1 mixed */
+                    /*   (la*w_z)_x */
+                    r1 += strx(i)*strz(k)*       
+                        i144*( la(i-2,j,k)*(u(3,i-2,j,k-2)-u(3,i-2,j,k+2)+
+                            8*(-u(3,i-2,j,k-1)+u(3,i-2,j,k+1))) - 8*(
+                                la(i-1,j,k)*(u(3,i-1,j,k-2)-u(3,i-1,j,k+2)+
+                                    8*(-u(3,i-1,j,k-1)+u(3,i-1,j,k+1))) )+8*(
+                                        la(i+1,j,k)*(u(3,i+1,j,k-2)-u(3,i+1,j,k+2)+
+                                            8*(-u(3,i+1,j,k-1)+u(3,i+1,j,k+1))) ) - (
+                                                la(i+2,j,k)*(u(3,i+2,j,k-2)-u(3,i+2,j,k+2)+
+                                                    8*(-u(3,i+2,j,k-1)+u(3,i+2,j,k+1))) ));
+                    /*   (mu*w_x)_z */
+                    r1 += strx(i)*strz(k)*       
+                        i144*( mu(i,j,k-2)*(u(3,i-2,j,k-2)-u(3,i+2,j,k-2)+
+                            8*(-u(3,i-1,j,k-2)+u(3,i+1,j,k-2))) - 8*(
+                                mu(i,j,k-1)*(u(3,i-2,j,k-1)-u(3,i+2,j,k-1)+
+                                    8*(-u(3,i-1,j,k-1)+u(3,i+1,j,k-1))) )+8*(
+                                        mu(i,j,k+1)*(u(3,i-2,j,k+1)-u(3,i+2,j,k+1)+
+                                            8*(-u(3,i-1,j,k+1)+u(3,i+1,j,k+1))) ) - (
+                                                mu(i,j,k+2)*(u(3,i-2,j,k+2)-u(3,i+2,j,k+2)+
+                                                    8*(-u(3,i-1,j,k+2)+u(3,i+1,j,k+2))) ));
+                    //assign to lu:
+                    lu(1,i,j,k) +=  cof*r1;
+                }
+            }
+            
+            
+            for( j=jfirst+2; j <= jlast-2 ; j++ ){
+#pragma omp simd
+#pragma ivdep
+                for( i=ifirst+2; i <= ilast-2 ; i++ ){
+                    
+                    r2 = 0.;
+                    
+                    /* r2 mixed */
+                    /* (la*w_z)_y */
+                    r2 += stry(j)*strz(k)*
+                        i144*( la(i,j-2,k)*(u(3,i,j-2,k-2)-u(3,i,j-2,k+2)+
+                            8*(-u(3,i,j-2,k-1)+u(3,i,j-2,k+1))) - 8*(
+                                la(i,j-1,k)*(u(3,i,j-1,k-2)-u(3,i,j-1,k+2)+
+                                    8*(-u(3,i,j-1,k-1)+u(3,i,j-1,k+1))) )+8*(
+                                        la(i,j+1,k)*(u(3,i,j+1,k-2)-u(3,i,j+1,k+2)+
+                                            8*(-u(3,i,j+1,k-1)+u(3,i,j+1,k+1))) ) - (
+                                                la(i,j+2,k)*(u(3,i,j+2,k-2)-u(3,i,j+2,k+2)+
+                                                    8*(-u(3,i,j+2,k-1)+u(3,i,j+2,k+1))) ));
+                    /* (mu*w_y)_z */
+                    r2 += stry(j)*strz(k)*
+                        i144*( mu(i,j,k-2)*(u(3,i,j-2,k-2)-u(3,i,j+2,k-2)+
+                            8*(-u(3,i,j-1,k-2)+u(3,i,j+1,k-2))) - 8*(
+                                mu(i,j,k-1)*(u(3,i,j-2,k-1)-u(3,i,j+2,k-1)+
+                                    8*(-u(3,i,j-1,k-1)+u(3,i,j+1,k-1))) )+8*(
+                                        mu(i,j,k+1)*(u(3,i,j-2,k+1)-u(3,i,j+2,k+1)+
+                                            8*(-u(3,i,j-1,k+1)+u(3,i,j+1,k+1))) ) - (
+                                                mu(i,j,k+2)*(u(3,i,j-2,k+2)-u(3,i,j+2,k+2)+
+                                                    8*(-u(3,i,j-1,k+2)+u(3,i,j+1,k+2))) ));
+
+                    /* 9 ops */
+                    //lu(1,i,j,k) = a1*lu(1,i,j,k) + cof*r1;
+                    //lu(2,i,j,k) = a1*lu(2,i,j,k) + cof*r2;
+                    //lu(3,i,j,k) = a1*lu(3,i,j,k) + cof*r3;
+                    lu(2,i,j,k) +=  cof*r2;
+                }
+            }
         }
         if( onesided[4]==1 )
         {
