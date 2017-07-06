@@ -994,7 +994,7 @@ float_sw4* __restrict__ a_strz )
 //                lu(3,i,j,k) = a1*lu(3,i,j,k) + cof*r3;
 //            }
 //        }
-//    }
+    }
     //__itt_pause();
 
 #undef mu
