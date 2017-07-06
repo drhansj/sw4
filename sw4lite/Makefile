@@ -93,10 +93,10 @@ else ifeq ($(findstring cori,$(HOSTNAME)),cori)
 #  OPT = -O2
 #  EXTRA_LINK_FLAGS =  # only needs module load cray-mpich
 # Intel compiler:
-  OPT = -O3
+  OPT = -O3 -g -mkl -dynamic -I${VTUNE_AMPLIFIER_XE_2017_DIR}/include
 #  OPT = -O3 -qoverride-limits
   OMPOPT = -qopenmp
-  EXTRA_LINK_FLAGS =  -lpthread -lm -ldl -lifcore
+  EXTRA_LINK_FLAGS = -lpthread -lm -ldl -mkl -dynamic -g -L${VTUNE_AMPLIFIER_XE_2017_DIR}/lib64 -littnotify
   openmp = yes
   computername := cori
 else ifeq ($(findstring valhall,$(HOSTNAME)),valhall)
@@ -208,7 +208,7 @@ else
    builddir = $(optdir)
 endif
 
-OBJ  = main.o EW.o Sarray.o Source.o SuperGrid.o GridPointSource.o time_functions.o EW_cuda.o ew-cfromfort.o rhs4sg.o rhs4sg_rev.o EWCuda.o CheckPoint.o Parallel_IO.o EW-dg.o MaterialData.o MaterialBlock.o Polynomial.o SecondOrderSection.o Filter.o TimeSeries.o sacsubc.o curvilinear-c.o rhs4sgcurv.o rhs4sgcurv_rev.o
+OBJ  = main.o Timer.o EW.o Sarray.o Source.o SuperGrid.o GridPointSource.o time_functions.o EW_cuda.o ew-cfromfort.o rhs4sg.o rhs4sg_rev.o EWCuda.o CheckPoint.o Parallel_IO.o EW-dg.o MaterialData.o MaterialBlock.o Polynomial.o SecondOrderSection.o Filter.o TimeSeries.o sacsubc.o curvilinear-c.o rhs4sgcurv.o rhs4sgcurv_rev.o
 
 FOROBJ = rhs4th3fort.o boundaryOp.o addsgd.o solerr3.o bcfort.o type_defs.o lglnodes.o dgmodule.o metric.o curvilinear4sg.o freesurfcurvisg.o
 
