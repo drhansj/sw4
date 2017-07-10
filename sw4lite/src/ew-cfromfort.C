@@ -14,12 +14,14 @@ void EW::corrfort( int ib, int ie, int jb, int je, int kb, int ke, float_sw4* up
    if( m_corder )
    {
 #pragma omp parallel for
+#pragma simd
+#pragma ivdep
       for( size_t i=0 ; i < npts ; i++ )
       {
-	 float_sw4 dt4i12orh = dt4i12/rho[i];
-	 up[i  ]      += dt4i12orh*(lu[i  ]     +fo[i  ]);
-	 up[i+npts]   += dt4i12orh*(lu[i+npts]  +fo[i+npts]);
-	 up[i+2*npts] += dt4i12orh*(lu[i+2*npts]+fo[i+2*npts]);
+         float_sw4 dt4i12orh = dt4i12/rho[i];
+         up[i  ]      += dt4i12orh*(lu[i  ]     +fo[i  ]);
+         up[i+npts]   += dt4i12orh*(lu[i+npts]  +fo[i+npts]);
+         up[i+2*npts] += dt4i12orh*(lu[i+2*npts]+fo[i+2*npts]);
       }
    }
    else
@@ -27,10 +29,10 @@ void EW::corrfort( int ib, int ie, int jb, int je, int kb, int ke, float_sw4* up
 #pragma omp parallel for
       for( size_t i=0 ; i < npts ; i++ )
       {
-	 float_sw4 dt4i12orh = dt4i12/rho[i];
-	 up[3*i  ] += dt4i12orh*(lu[3*i  ]+fo[3*i  ]);
-	 up[3*i+1] += dt4i12orh*(lu[3*i+1]+fo[3*i+1]);
-	 up[3*i+2] += dt4i12orh*(lu[3*i+2]+fo[3*i+2]);
+         float_sw4 dt4i12orh = dt4i12/rho[i];
+         up[3*i  ] += dt4i12orh*(lu[3*i  ]+fo[3*i  ]);
+         up[3*i+1] += dt4i12orh*(lu[3*i+1]+fo[3*i+1]);
+         up[3*i+2] += dt4i12orh*(lu[3*i+2]+fo[3*i+2]);
       }
    }
 }
@@ -45,12 +47,14 @@ void EW::predfort( int ib, int ie, int jb, int je, int kb, int ke, float_sw4* up
    {
       // Like this ?
 #pragma omp parallel for
+#pragma simd
+#pragma ivdep
       for( size_t i=0 ; i < npts ; i++ )
       {
-	 float_sw4 dt2orh = dt2/rho[i];
-	 up[i  ]      = 2*u[i  ]     -um[i  ]      + dt2orh*(lu[i  ]     +fo[i  ]);
-	 up[i+npts]   = 2*u[i+npts]  -um[i+npts]   + dt2orh*(lu[i+npts]  +fo[i+npts]);
-	 up[i+2*npts] = 2*u[i+2*npts]-um[i+2*npts] + dt2orh*(lu[i+2*npts]+fo[i+2*npts]);
+         float_sw4 dt2orh = dt2/rho[i];
+         up[i  ]      = 2*u[i  ]     -um[i  ]      + dt2orh*(lu[i  ]     +fo[i  ]);
+         up[i+npts]   = 2*u[i+npts]  -um[i+npts]   + dt2orh*(lu[i+npts]  +fo[i+npts]);
+         up[i+2*npts] = 2*u[i+2*npts]-um[i+2*npts] + dt2orh*(lu[i+2*npts]+fo[i+2*npts]);
       }
 // Alternatives:
 //      // Or this ?
@@ -73,10 +77,10 @@ void EW::predfort( int ib, int ie, int jb, int je, int kb, int ke, float_sw4* up
 #pragma omp parallel for
       for( size_t i=0 ; i < npts ; i++ )
       {
-	 float_sw4 dt2orh = dt2/rho[i];
-	 up[3*i  ] = 2*u[3*i  ]-um[3*i  ] + dt2orh*(lu[3*i  ]+fo[3*i  ]);
-	 up[3*i+1] = 2*u[3*i+1]-um[3*i+1] + dt2orh*(lu[3*i+1]+fo[3*i+1]);
-	 up[3*i+2] = 2*u[3*i+2]-um[3*i+2] + dt2orh*(lu[3*i+2]+fo[3*i+2]);
+         float_sw4 dt2orh = dt2/rho[i];
+         up[3*i  ] = 2*u[3*i  ]-um[3*i  ] + dt2orh*(lu[3*i  ]+fo[3*i  ]);
+         up[3*i+1] = 2*u[3*i+1]-um[3*i+1] + dt2orh*(lu[3*i+1]+fo[3*i+1]);
+         up[3*i+2] = 2*u[3*i+2]-um[3*i+2] + dt2orh*(lu[3*i+2]+fo[3*i+2]);
       }
    }
 }

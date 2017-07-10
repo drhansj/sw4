@@ -6090,16 +6090,20 @@ void EW::generate_grid()
 // generate the grid by calling the curvilinear mapping function
   float_sw4 X0, Y0, Z0;
   int k;
-  for (k=m_kStart[gTop]; k<=m_kEnd[gTop]; k++)
-    for (j=m_jStart[gTop]; j<=m_jEnd[gTop]; j++)
+  for (k=m_kStart[gTop]; k<=m_kEnd[gTop]; k++){
+    for (j=m_jStart[gTop]; j<=m_jEnd[gTop]; j++){
 #pragma omp simd
+#pragma ivdep
+//#pragma vector always
       for (i=m_iStart[gTop]; i<=m_iEnd[gTop]; i++)
       {
-	grid_mapping((float_sw4) i, (float_sw4) j, (float_sw4) k, X0, Y0, Z0);
-	mX(i,j,k) = X0;
-	mY(i,j,k) = Y0;
-	mZ(i,j,k) = Z0;
+          grid_mapping((float_sw4) i, (float_sw4) j, (float_sw4) k, X0, Y0, Z0);
+          mX(i,j,k) = X0;
+          mY(i,j,k) = Y0;
+          mZ(i,j,k) = Z0;
       }
+    }
+  }
   communicate_array( mZ, gTop );
 
 // calculate min and max((mZ(i,j,k)-mZ(i,j,k-1))/h) for k=Nz
@@ -6107,6 +6111,7 @@ void EW::generate_grid()
   float_sw4 hRatio;
   float_sw4 mZmin = 1.0e9, mZmax=0;
   for (j=m_jStart[gTop]; j<=m_jEnd[gTop]; j++)
+//#pragma vector always
     for (i=m_iStart[gTop]; i<=m_iEnd[gTop]; i++)
     {
        hRatio = (mZ(i,j,k)-mZ(i,j,k-1))/mGridSize[gTop];

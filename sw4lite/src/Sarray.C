@@ -35,6 +35,7 @@
 #include <cstdlib>
 #include <fcntl.h>
 #include <unistd.h>
+#include <algorithm>
 
 using namespace std;
 
@@ -431,17 +432,33 @@ void Sarray::set_to_zero()
 //-----------------------------------------------------------------------
 void Sarray::set_to_minusOne()
 {
+    int block = 512;
 #pragma omp parallel for
-   for( size_t i=0 ; i < m_npts ; i++ )
+    for(size_t iTmp = 0; iTmp < m_npts; iTmp += block){
+#pragma simd
+   for( size_t i=iTmp ; i < std::min(m_npts,iTmp+block)  ; i++ )
       m_data[i] = -1.;
+    }
+
+
+//#pragma omp parallel for
+//   for( size_t i=0 ; i < m_npts ; i++ )
+//      m_data[i] = -1.;
 }
 
 //-----------------------------------------------------------------------
 void Sarray::set_value( float_sw4 scalar )
 {
+    int block = 512;
 #pragma omp parallel for
-   for( size_t i=0 ; i < m_npts ; i++ )
+    for(size_t iTmp = 0; iTmp < m_npts; iTmp += block){
+#pragma simd
+   for( size_t i=iTmp ; i < std::min(m_npts,iTmp+block)  ; i++ )
       m_data[i] = scalar;
+    }
+//#pragma omp parallel for
+//   for( size_t i=0 ; i < m_npts ; i++ )
+//      m_data[i] = scalar;
 }
 
 //-----------------------------------------------------------------------
