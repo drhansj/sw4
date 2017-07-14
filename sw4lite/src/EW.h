@@ -1,6 +1,8 @@
 #ifndef SW4_EW
 #define SW4_EW
 
+#define SafeCudaCall(call)    CheckCudaCall(call, #call, __FILE__, __LINE__)
+
 #include <string>
 #include <vector>
 #include <iostream>
@@ -57,6 +59,7 @@ class EW
    void cycleSolutionArrays(vector<Sarray> & a_Um, vector<Sarray> & a_U,
 			    vector<Sarray> & a_Up ) ;
    void Force(float_sw4 a_t, vector<Sarray> & a_F, vector<GridPointSource*> point_sources, bool tt );
+   void ForceCU( float_sw4 a_t, Sarray* dev_F, bool tt, int st );
    void evalRHS( vector<Sarray> & a_U, vector<Sarray>& a_Mu, vector<Sarray>& a_Lambda,
 		 vector<Sarray> & a_Uacc );
    void evalRHSCU( vector<Sarray> & a_U, vector<Sarray>& a_Mu, vector<Sarray>& a_Lambda,
@@ -64,23 +67,27 @@ class EW
    void evalPredictor(vector<Sarray> & a_Up, vector<Sarray> & a_U, vector<Sarray> & a_Um,
 		      vector<Sarray>& a_Rho, vector<Sarray> & a_Lu, vector<Sarray> & a_F );
    void evalPredictorCU(vector<Sarray> & a_Up, vector<Sarray> & a_U, vector<Sarray> & a_Um,
-			vector<Sarray>& a_Rho, vector<Sarray> & a_Lu, vector<Sarray> & a_F, int st );
+			vector<Sarray>& a_Rho, vector<Sarray> & a_Lu, vector<Sarray>& a_F, int st );
    void evalCorrector(vector<Sarray> & a_Up, vector<Sarray>& a_Rho,
 		      vector<Sarray> & a_Lu, vector<Sarray> & a_F );
    void evalCorrectorCU(vector<Sarray> & a_Up, vector<Sarray>& a_Rho,
-			vector<Sarray> & a_Lu, vector<Sarray> & a_F, int st );
+			vector<Sarray> & a_Lu, vector<Sarray>& a_F, int st );
    void evalDpDmInTime(vector<Sarray> & a_Up, vector<Sarray> & a_U, vector<Sarray> & a_Um,
 		       vector<Sarray> & a_Uacc );
    void evalDpDmInTimeCU(vector<Sarray> & a_Up, vector<Sarray> & a_U, vector<Sarray> & a_Um,
 			 vector<Sarray> & a_Uacc, int st );
    void communicate_array( Sarray& U, int g );
- 
    void cartesian_bc_forcing( float_sw4 t, vector<float_sw4**> & a_BCForcing,
 			      vector<Source*>& a_sources );
+   void cartesian_bc_forcingCU( float_sw4 t, vector<float_sw4**> & a_BCForcing,
+                              vector<Source*>& a_sources , int st);
+
    void setup_boundary_arrays();
    void side_plane( int g, int side, int wind[6], int nGhost );   
    void enforceBC( vector<Sarray> & a_U, vector<Sarray>& a_Mu, vector<Sarray>& a_Lambda,
 		   float_sw4 t, vector<float_sw4**> & a_BCForcing );
+   void enforceBCCU( vector<Sarray> & a_U, vector<Sarray>& a_Mu, vector<Sarray>& a_Lambda,
+                   float_sw4 t, vector<float_sw4**> & a_BCForcing , int st);
    void enforceCartTopo( vector<Sarray>& a_U );
    void addSuperGridDamping(vector<Sarray> & a_Up, vector<Sarray> & a_U,
 			    vector<Sarray> & a_Um, vector<Sarray> & a_Rho );
@@ -258,6 +265,10 @@ class EW
    void extractRecordData(TimeSeries::receiverMode mode, int i0, int j0, int k0, int g0, 
 			  vector<float_sw4> &uRec, vector<Sarray> &Um2, vector<Sarray> &U);
 
+   void sort_grid_point_sources();
+   void copy_point_sources_to_gpu();
+   void init_point_sourcesCU();
+
    // DG stuff
    int m_qu;
    int m_qv; 
@@ -362,13 +373,21 @@ class EW
    vector<int *> m_NumberOfBCPoints;
    vector<int *> m_BndryWindow;
 
+   vector<boundaryConditionType*> dev_bcType;
+   vector<int *> dev_BndryWindow;
+   vector<float_sw4**> BCForcing;
+   vector<float_sw4**> dev_BCForcing;
+   void copy_bcforcing_arrays_to_device();
+   void copy_bctype_arrays_to_device();
+   void copy_bndrywindow_arrays_to_device();
+
    // Test modes
    bool m_point_source_test, m_moment_test;
 
    // diagnostic output, error checking
    int mPrintInterval, mVerbose;
    bool mQuiet;
-   bool m_checkfornan, m_output_detailed_timing;
+   bool m_checkfornan, m_output_detailed_timing, m_save_trace;
    string mPath;
 
    // File io
@@ -378,6 +397,9 @@ class EW
    // Sources
    vector<Source*> m_globalUniqueSources;
    vector<GridPointSource*> m_point_sources;
+   vector<int> m_identsources;
+   GridPointSource** dev_point_sources;
+   int* dev_identsources;
 
    // Supergrid boundary conditions
    float_sw4 m_supergrid_damping_coefficient;
@@ -398,6 +420,16 @@ class EW
 
    // Discontinuous Galerkin stuff
    bool m_use_dg;
+ 
+   // Halo data communication 
+   vector<float_sw4*> dev_SideEdge_Send, dev_SideEdge_Recv;
+   vector<float_sw4*>  m_SideEdge_Send, m_SideEdge_Recv;
+   void setup_device_communication_array();
+   void communicate_arrayCU( Sarray& u, int g , int st);
+
+#ifdef SW4_CUDA
+   void CheckCudaCall(cudaError_t command, const char * commandName, const char * fileName, int line);
+#endif
    
 };
 

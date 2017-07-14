@@ -1,6 +1,7 @@
 #-----------------------------------------------------------------------
 # Usage:
-# make sw4lite [ckernel=yes/no] (default is ckernel=no, i.e. use the Fortran kernel)
+# make sw4lite [ckernel=yes/no single=yes/no] 
+# (default is ckernel=no, single=no, i.e. use the Fortran kernel and double precision)
 #
 # To define the compilers on LC:
 # use ic-16.0.210
@@ -11,7 +12,14 @@ ifneq ($(ckernel),yes)
    ckernel := "no"
 endif
 
+ifneq ($(single),yes)
+   single := "no"
+endif
+
 HOSTNAME := $(shell hostname)
+
+# default optimization level (may be modified below)
+OPT = -O3
 
 # Fourier is Anders' mac powerbook
 ifeq ($(findstring fourier,$(HOSTNAME)),fourier)
@@ -19,9 +27,10 @@ ifeq ($(findstring fourier,$(HOSTNAME)),fourier)
   CC = gcc
   CXX = mpicxx
   OMPOPT = -fopenmp
-  EXTRA_LINK_FLAGS = -framework Accelerate -L/opt/local/lib/gcc48 -lgfortran
+  EXTRA_LINK_FLAGS = -framework Accelerate -L/opt/local/lib/gcc5 -lgfortran
   openmp = yes
 # LC quartz is a large cluster of Intel Haswell nodes
+  computername := fourier
 else ifeq ($(findstring quartz,$(HOSTNAME)),quartz)
   FC = mpifort
   CXX = mpicxx
@@ -31,13 +40,15 @@ else ifeq ($(findstring quartz,$(HOSTNAME)),quartz)
   EXTRA_FORT_FLAGS = -xCORE-AVX2
   EXTRA_LINK_FLAGS = -Wl,-rpath=$(SW4ROOT)/lib -Wl,-rpath=${MKL_PATH} -L${MKL_PATH} -lmkl_intel_lp64 -lmkl_core -lmkl_sequential -lpthread -lm -ldl -lifcore
   openmp = yes
+  computername := quartz
 # LC cab is a large cluster of Intel Xeon nodes
 else ifeq ($(findstring cab,$(HOSTNAME)),cab)
 # assumes: use ic_16.0.210, use mvapich2-intel-2.1
   FC = mpif90
   CXX = mpic++
   OMPOPT = -fopenmp
-  EXTRA_LINK_FLAGS = -lblas -llapack
+  EXTRA_LINK_FLAGS = -lblas -llapack -lifcore
+  computername := cab
 # NERSC carl is a single node Intel KNL machine
 else ifeq ($(findstring carl,$(HOSTNAME)),carl)
   FC = mpiifort
@@ -50,6 +61,7 @@ else ifeq ($(findstring carl,$(HOSTNAME)),carl)
   EXTRA_FORT_FLAGS = -xmic-avx512,core-avx2
   EXTRA_LINK_FLAGS = -Wl,-rpath=$(SW4ROOT)/lib -Wl,-rpath=${MKL_PATH} -L${MKL_PATH} -lmkl_intel_lp64 -lmkl_core -lmkl_sequential -lpthread -lm -ldl -lifcore
   openmp = yes
+  computername := carl
 #
 # LBL quadknl is Hans' single node Intel KNL machine
 #
@@ -95,29 +107,38 @@ else ifeq ($(findstring cori,$(HOSTNAME)),cori)
 # cray compiler wrappers
   FC = ftn
   CXX = CC
-# intel
-#  FC = mpiifort
-#  CXX = mpiicpc
-#  OMPOPT = -fopenmp
-# haswell
-#  EXTRA_CXX_FLAGS = -xCORE-AVX2
-#  EXTRA_FORT_FLAGS = -xCORE-AVX2
-# optimization report
-#  EXTRA_CXX_FLAGS = -qopt_report=3
-# mkl flags
-#  EXTRA_LINK_FLAGS =  -lmkl_intel_lp64 -lmkl_core -lmkl_sequential -lpthread -lpthread -lm -ldl -lifcore
-# Cray-knl
-#  EXTRA_CXX_FLAGS = -hcpu=mic-knl
-#  EXTRA_FORT_FLAGS = -hcpu=mic-knl
+# Cray compiler:  (requires modules: PrgEnv-cray and cray-mpich)
+# rhs4sgcurv_rev.C gives segfault with -O, try -O1 instead
+# the ftn compiler does not accept -O. Need to specify -O2
+#  OPT = -O2
+#  EXTRA_LINK_FLAGS =  # only needs module load cray-mpich
+# Intel compiler:
+  OPT = -O3
+#  OPT = -O3 -qoverride-limits
   OMPOPT = -qopenmp
   EXTRA_LINK_FLAGS =  -lpthread -lm -ldl -lifcore
   openmp = yes
+  computername := cori
 else ifeq ($(findstring valhall,$(HOSTNAME)),valhall)
   FC = mpif90_ifort
   CXX = mpicc_icc
   OMPOPT = -qopenmp
   EXTRA_LINK_FLAGS = -lifcore -lblas -llapack
   openmp = yes
+  computername := valhall
+else ifeq ($(findstring ray,$(HOSTNAME)),ray)
+  FC  = mpif90
+  CXX = mpic++
+  OMPOPT = -fopenmp
+  EXTRA_LINK_FLAGS = -lgfortran  -llapack -lblas
+  OPT += -g 
+#  EXTRA_LINK_FLAGS += -L/usr/tcetmp/packages/blas/blas-3.6.0-xlf-15.1.5/lib
+#  EXTRA_LINK_FLAGS += -L/usr/tcetmp/packages/lapack/lapack-3.6.0-xlf-15.1.5/lib	
+  EXTRA_LINK_FLAGS += -L/usr/tcetmp/packages/blas/blas-3.6.0-gfortran-4.8.5/lib
+  EXTRA_LINK_FLAGS += -L/usr/tcetmp/packages/lapack/lapack-3.6.0-gfortran-4.8.5/lib
+  openmp = no
+  debug = no
+  computername := ray
 else
   FC  = mpif90
   CXX = mpic++
@@ -139,9 +160,9 @@ ifeq ($(optlevel),DEBUG)
    CXXFLAGS  = -g -I../src -DBZ_DEBUG
    CFLAGS    = -g
 else
-   FFLAGS   = -O3
-   CXXFLAGS = -O2 -I../src
-   CFLAGS   = -O3
+   FFLAGS   = $(OPT)
+   CXXFLAGS = $(OPT) -I../src
+   CFLAGS   = $(OPT)
 endif
 
 ifeq ($(openmp),yes)
@@ -171,12 +192,18 @@ else
       optdir   := optimize
    endif
 endif
+
 ifeq ($(single),yes)
    debugdir := $(debugdir)_sp
    optdir   := $(optdir)_sp
    CXXFLAGS += -I../src/float
 else
    CXXFLAGS += -I../src/double
+endif
+
+ifneq ($(origin computername),undefined)
+   debugdir := $(debugdir)_$(computername)
+   optdir   := $(optdir)_$(computername)
 endif
 
 ifdef EXTRA_CXX_FLAGS
@@ -246,7 +273,6 @@ $(builddir)/%.o:src/%.f90
 clean:
 	/bin/mkdir -p $(optdir)
 	/bin/mkdir -p $(debugdir)
-	/bin/mkdir -p optimize_mp_c
-	cd $(optdir); /bin/rm -f sw4lite *.o; cd ../$(debugdir); /bin/rm -f sw4lite *.o; cd ../optimize_mp_c; /bin/rm -f sw4lite *.o
+	cd $(optdir); /bin/rm -f sw4lite *.o; cd ../$(debugdir); /bin/rm -f sw4lite *.o
 
 
