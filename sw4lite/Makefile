@@ -27,7 +27,7 @@ ifeq ($(findstring fourier,$(HOSTNAME)),fourier)
   CC = gcc
   CXX = mpicxx
   OMPOPT = -fopenmp
-  EXTRA_LINK_FLAGS = -framework Accelerate -L/opt/local/lib/gcc5 -lgfortran
+  EXTRA_LINK_FLAGS = -framework Accelerate -L/opt/local/lib/gcc48 -lgfortran
   openmp = yes
 # LC quartz is a large cluster of Intel Haswell nodes
   computername := fourier
@@ -47,7 +47,7 @@ else ifeq ($(findstring cab,$(HOSTNAME)),cab)
   FC = mpif90
   CXX = mpic++
   OMPOPT = -fopenmp
-  EXTRA_LINK_FLAGS = -lblas -llapack -lifcore
+  EXTRA_LINK_FLAGS = -lblas -llapack
   computername := cab
 # NERSC carl is a single node Intel KNL machine
 else ifeq ($(findstring carl,$(HOSTNAME)),carl)
@@ -93,12 +93,21 @@ else ifeq ($(findstring cori,$(HOSTNAME)),cori)
 #  OPT = -O2
 #  EXTRA_LINK_FLAGS =  # only needs module load cray-mpich
 # Intel compiler:
-  OPT = -O3
-#  OPT = -O3 -qoverride-limits
+  OPT = -O3 -qoverride-limits
   OMPOPT = -qopenmp
   EXTRA_LINK_FLAGS =  -lpthread -lm -ldl -lifcore
   openmp = yes
   computername := cori
+  OPT = -O3 -g -DUSE_VTUNE -I${VTUNE_AMPLIFIER_XE_2017_DIR}/include
+  MKL_PATH = /global/common/cori/software/intel/2018beta/compilers_and_libraries_2018/linux/mkl/lib/intel64
+  OTHER_PATH = /global/common/cori/software/intel/2018beta/compilers_and_libraries_2018/linux/lib/intel64
+  BASIC_PATH = /opt/intel/lib/intel64
+  EXTRA_CXX_FLAGS = -xmic-avx512 -qoverride-limits -qopt-report=5 #-xCORE_AVX2
+  EXTRA_C_FLAGS = #-xmic-avx512
+  EXTRA_FORT_FLAGS = #-xmic-avx512
+#Dynamic Linking of mkl
+  EXTRA_LINK_FLAGS = -Wl,-rpath=${MKL_PATH} -Wl,-rpath=${BASIC_PATH} -L${MKL_PATH} -lmkl_intel_lp64 -lmkl_core -lmkl_sequential -lpthread -lm -ldl -Wl,-rpath=${OTHER_PATH} -L${OTHER_PATH} -lifcore -L${BASIC_PATH} -limf -lsvml -lintlc -dynamic -L${VTUNE_AMPLIFIER_XE_2017_DIR}/lib64 -littnotify
+
 else ifeq ($(findstring valhall,$(HOSTNAME)),valhall)
   FC = mpif90_ifort
   CXX = mpicc_icc
@@ -106,19 +115,6 @@ else ifeq ($(findstring valhall,$(HOSTNAME)),valhall)
   EXTRA_LINK_FLAGS = -lifcore -lblas -llapack
   openmp = yes
   computername := valhall
-else ifeq ($(findstring ray,$(HOSTNAME)),ray)
-  FC  = mpif90
-  CXX = mpic++
-  OMPOPT = -fopenmp
-  EXTRA_LINK_FLAGS = -lgfortran  -llapack -lblas
-  OPT += -g 
-#  EXTRA_LINK_FLAGS += -L/usr/tcetmp/packages/blas/blas-3.6.0-xlf-15.1.5/lib
-#  EXTRA_LINK_FLAGS += -L/usr/tcetmp/packages/lapack/lapack-3.6.0-xlf-15.1.5/lib	
-  EXTRA_LINK_FLAGS += -L/usr/tcetmp/packages/blas/blas-3.6.0-gfortran-4.8.5/lib
-  EXTRA_LINK_FLAGS += -L/usr/tcetmp/packages/lapack/lapack-3.6.0-gfortran-4.8.5/lib
-  openmp = no
-  debug = no
-  computername := ray
 else
   FC  = mpif90
   CXX = mpic++
@@ -208,7 +204,8 @@ else
    builddir = $(optdir)
 endif
 
-OBJ  = main.o EW.o Sarray.o Source.o SuperGrid.o GridPointSource.o time_functions.o EW_cuda.o ew-cfromfort.o rhs4sg.o rhs4sg_rev.o EWCuda.o CheckPoint.o Parallel_IO.o EW-dg.o MaterialData.o MaterialBlock.o Polynomial.o SecondOrderSection.o Filter.o TimeSeries.o sacsubc.o curvilinear-c.o rhs4sgcurv.o rhs4sgcurv_rev.o
+#OBJ  = main.o EW.o Sarray.o Source.o SuperGrid.o GridPointSource.o time_functions.o EW_cuda.o ew-cfromfort.o rhs4sg.o rhs4sg_rev.o EWCuda.o CheckPoint.o Parallel_IO.o EW-dg.o MaterialData.o MaterialBlock.o Polynomial.o SecondOrderSection.o Filter.o TimeSeries.o sacsubc.o curvilinear-c.o rhs4sgcurv.o rhs4sgcurv_rev.o
+OBJ  = main.o EW.o Sarray.o Source.o SuperGrid.o GridPointSource.o time_functions.o EW_cuda.o ew-cfromfort.o rhs4sg.o chill_rhs4sg_rev.o EWCuda.o CheckPoint.o Parallel_IO.o EW-dg.o MaterialData.o MaterialBlock.o Polynomial.o SecondOrderSection.o Filter.o TimeSeries.o sacsubc.o curvilinear-c.o rhs4sgcurv.o rhs4sgcurv_rev.o
 
 FOROBJ = rhs4th3fort.o boundaryOp.o addsgd.o solerr3.o bcfort.o type_defs.o lglnodes.o dgmodule.o metric.o curvilinear4sg.o freesurfcurvisg.o
 
@@ -228,7 +225,8 @@ sw4lite: $(FOBJ)
 	@cat wave.txt
 	@echo "*** Build directory: " $(builddir) " ***"
 
-OBJ2 =  testil.o rhs4sg.o rhs4sg_rev.o gettimec.o rhs4th3fort.o boundaryOp.o
+#OBJ2 =  testil.o rhs4sg.o rhs4sg_rev.o gettimec.o rhs4th3fort.o boundaryOp.o
+OBJ2 =  testil.o rhs4sg.o chill_rhs4sg_rev.o gettimec.o rhs4th3fort.o boundaryOp.o
 FOBJ2 = $(addprefix $(builddir)/,$(OBJ2))
 
 testil : $(FOBJ2)
@@ -253,6 +251,7 @@ $(builddir)/%.o:src/%.f90
 clean:
 	/bin/mkdir -p $(optdir)
 	/bin/mkdir -p $(debugdir)
-	cd $(optdir); /bin/rm -f sw4lite *.o; cd ../$(debugdir); /bin/rm -f sw4lite *.o
+	/bin/mkdir -p optimize_mp_c
+	cd $(optdir); /bin/rm -f sw4lite *.o; cd ../$(debugdir); /bin/rm -f sw4lite *.o; cd ../optimize_mp_c; /bin/rm -f sw4lite *.o
 
 
