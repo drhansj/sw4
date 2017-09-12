@@ -107,10 +107,31 @@ extern "C"
 {
    void F77_FUNC(dspev,DSPEV)(char & JOBZ, char & UPLO, int & N, double *AP, double *W, double *Z, int & LDZ, double *WORK, int & INFO);
 }
-void rhs4sg_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, int klast,
-	     int nk, int* onesided, float_sw4* a_acof, float_sw4* a_bope, float_sw4* a_ghcof,
-	     float_sw4* a_lu, float_sw4* a_u, float_sw4* a_mu, float_sw4* a_lambda, 
-	     float_sw4 h, float_sw4* a_strx, float_sw4* a_stry, float_sw4* a_strz  );
+//void rhs4sg_rev(int ifirst, int ilast, int jfirst, int jlast, int kfirst, int klast,
+//	     int nk, int* onesided, float_sw4* a_acof, float_sw4* a_bope, float_sw4* a_ghcof,
+//	     float_sw4* a_lu, float_sw4* a_u, float_sw4* a_mu, float_sw4* a_lambda, 
+//	     float_sw4 h, float_sw4* a_strx, float_sw4* a_stry, float_sw4* a_strz  );
+
+void rhs4sg_rev(int mNumberOfCartesianGrids, \
+vector<int> ifirst,\
+vector<int> ilast,\
+vector<int> jfirst,\
+vector<int> jlast,\
+vector<int> kfirst,\
+vector<int> klast,\
+vector<int> nk,\
+vector<int*> onesided,\
+float_sw4* a_acof,\
+float_sw4* a_bope,\
+float_sw4* a_ghcof,\
+vector<Sarray>& a_lu,\
+vector<Sarray>& a_u,\
+vector<Sarray>& a_mu,\
+vector<Sarray>& a_lambda,\ 
+vector<double> h,\
+vector<double*> a_strx,\
+vector<double*> a_stry,\
+vector<double*> a_strz  );
 
 void rhs4sg( int ifirst, int ilast, int jfirst, int jlast, int kfirst, int klast,
 	     int nk, int* onesided, float_sw4* a_acof, float_sw4* a_bope, float_sw4* a_ghcof,
@@ -122,10 +143,15 @@ void rhs4sgcurv_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, i
 		     float_sw4* a_jac, float_sw4* a_lu, int* onesided, float_sw4* acof,
 		     float_sw4* bope, float_sw4* ghcof, float_sw4* a_strx, float_sw4* a_stry );
 
+
+//void rhs4sgcurv_rev(vector<int> iFirst, vector<int> iLast, vector<int> jFirst, vector<int> jLast, vector<int> kFirst, vector<int> kLast, vector<Sarray>& a_Lu, float_sw4* a_jac, vector<double*> m_sg_str_x, vector<double*>  m_sg_str_y, vector<Sarray>& a_Mu, vector<Sarray>& a_Lambda, float_sw4* a_met, vector<Sarray>& a_U);
+
 void rhs4sgcurv( int ifirst, int ilast, int jfirst, int jlast, int kfirst, int klast,
-		 float_sw4* a_u, float_sw4* a_mu, float_sw4* a_lambda, float_sw4* a_met,
-		 float_sw4* a_jac, float_sw4* a_lu, int* onesided, float_sw4* acof,
-		 float_sw4* bope, float_sw4* ghcof, float_sw4* a_strx, float_sw4* a_stry );
+float_sw4* a_u, float_sw4* a_mu, float_sw4* a_lambda, float_sw4* a_met,
+float_sw4* a_jac, float_sw4* a_lu, int* onesided, float_sw4* acof,
+float_sw4* bope, float_sw4* ghcof, float_sw4* a_strx, float_sw4* a_stry );
+
+
 #endif
 
 EW::EW( const string& filename ) :
@@ -3050,83 +3076,127 @@ void EW::evalDpDmInTime(vector<Sarray> & a_Up, vector<Sarray> & a_U, vector<Sarr
 void EW::evalRHS(vector<Sarray> & a_U, vector<Sarray>& a_Mu, vector<Sarray>& a_Lambda,
 		 vector<Sarray> & a_Uacc )
 {
-   for(int g=0 ; g<mNumberOfCartesianGrids; g++ )
-   {
+
+#pragma omp parallel 
+{
 #ifdef SW4_CROUTINES
-      if( m_corder )
-      {
-        EW::countrhs4sg_rev++;
-        double tmp_time = omp_get_wtime();
-        
-	 rhs4sg_rev( m_iStart[g], m_iEnd[g], m_jStart[g], m_jEnd[g], 
-		     m_kStart[g], m_kEnd[g], m_global_nz[g], m_onesided[g],
-		     m_acof, m_bope, m_ghcof, a_Uacc[g].c_ptr(), a_U[g].c_ptr(), 
-		     a_Mu[g].c_ptr(), a_Lambda[g].c_ptr(), mGridSize[g],
-		     m_sg_str_x[g], m_sg_str_y[g], m_sg_str_z[g] );
-
-        tmp_time = omp_get_wtime() - tmp_time;  
-        EW::rhs4sg_tot_time+= tmp_time;        
-        if(tmp_time<EW::rhs4sg_min_time) EW::rhs4sg_min_time = tmp_time;
-        if(tmp_time>EW::rhs4sg_max_time) EW::rhs4sg_max_time = tmp_time;
-      }
-      else
-	 rhs4sg( m_iStart[g], m_iEnd[g], m_jStart[g], m_jEnd[g], 
-		 m_kStart[g], m_kEnd[g], m_global_nz[g], m_onesided[g],
-		 m_acof, m_bope, m_ghcof, a_Uacc[g].c_ptr(), a_U[g].c_ptr(), 
-		 a_Mu[g].c_ptr(), a_Lambda[g].c_ptr(), mGridSize[g],
-		 m_sg_str_x[g], m_sg_str_y[g], m_sg_str_z[g] );
-#ifdef DEBUG_CUDA
-      printf("params = %d, %d, %d, %d, %d, %d \n %f, %f, %f, %f \n %f, %f, %f, %f \n %d \n",  
-           m_iStart[g], m_iEnd[g], m_jStart[g], m_jEnd[g], 
-              m_kStart[g], m_kEnd[g],
-	   (a_Uacc[g].c_ptr())[1], (a_U[g].c_ptr())[1], 
-              (a_Mu[g].c_ptr())[1], (a_Lambda[g].c_ptr())[1], 
-	   mGridSize[g], m_sg_str_x[g][1], m_sg_str_y[g][1], m_sg_str_z[g][1],
-           m_ghost_points); 
-     printf("onesided[%d](4,5) = %d, %d\n", g, m_onesided[g][4], m_onesided[g][5]);
+        rhs4sg_rev(mNumberOfCartesianGrids,\
+        m_iStart,\
+        m_iEnd,\
+        m_jStart,\
+        m_jEnd,\
+        m_kStart,\
+        m_kEnd,\
+        m_global_nz,\
+        m_onesided,\
+        m_acof,\
+        m_bope,\
+        m_ghcof,\
+        a_Uacc,\
+        a_U,\
+        a_Mu,\
+        a_Lambda,\
+        mGridSize,\
+        m_sg_str_x,\
+        m_sg_str_y,\
+        m_sg_str_z);
 #endif
-#else
-      char op = '=';    // Assign Uacc := L(u)
-      F77_FUNC(rhs4th3fortsgstr,RHS4TH3FORTSGSTR)( &m_iStart[g], &m_iEnd[g], &m_jStart[g], &m_jEnd[g], 
-						   &m_kStart[g], &m_kEnd[g], &m_global_nz[g], m_onesided[g],
-						   m_acof, m_bope, m_ghcof, a_Uacc[g].c_ptr(), a_U[g].c_ptr(), 
-						   a_Mu[g].c_ptr(), a_Lambda[g].c_ptr(), &mGridSize[g],
-						   m_sg_str_x[g], m_sg_str_y[g], m_sg_str_z[g], &op );
-#endif	
-   }
-   if( m_topography_exists )
-   {
-      int g=mNumberOfGrids-1;
-      char op = '=';    // Assign Uacc := L(u)
+
+       if( m_topography_exists )
+       {
+          int g=mNumberOfGrids-1;
+          char op = '=';    // Assign Uacc := L(u)
 #ifdef SW4_CROUTINES
-      if( m_corder )
-      {
-        EW::countrhs4sgcurv_rev++;
-        double tmp_time = omp_get_wtime();
-
-         rhs4sgcurv_rev( m_iStart[g], m_iEnd[g], m_jStart[g], m_jEnd[g], m_kStart[g], m_kEnd[g],
-			 a_U[g].c_ptr(), a_Mu[g].c_ptr(), a_Lambda[g].c_ptr(), mMetric.c_ptr(),
-			 mJ.c_ptr(), a_Uacc[g].c_ptr(), m_onesided[g], m_acof, m_bope, m_ghcof,
-			 m_sg_str_x[g], m_sg_str_y[g] );
-
-        tmp_time = omp_get_wtime() - tmp_time;  
-        EW::rhs4sgcurv_tot_time+= tmp_time;        
-        if(tmp_time<EW::rhs4sgcurv_min_time) EW::rhs4sgcurv_min_time = tmp_time;
-        if(tmp_time>EW::rhs4sgcurv_max_time) EW::rhs4sgcurv_max_time = tmp_time;
-      }
-      else
-         rhs4sgcurv( m_iStart[g], m_iEnd[g], m_jStart[g], m_jEnd[g], m_kStart[g], m_kEnd[g],
-		     a_U[g].c_ptr(), a_Mu[g].c_ptr(), a_Lambda[g].c_ptr(), mMetric.c_ptr(),
-		     mJ.c_ptr(), a_Uacc[g].c_ptr(), m_onesided[g], m_acof, m_bope, m_ghcof,
-		     m_sg_str_x[g], m_sg_str_y[g] );
-#else      
-      F77_FUNC(curvilinear4sg,CURVILINEAR4SG)(&m_iStart[g], &m_iEnd[g], &m_jStart[g], &m_jEnd[g], 
-					      &m_kStart[g], &m_kEnd[g], a_U[g].c_ptr(), a_Mu[g].c_ptr(),
-					      a_Lambda[g].c_ptr(), mMetric.c_ptr(), mJ.c_ptr(), a_Uacc[g].c_ptr(),
-					      m_onesided[g], m_acof, m_bope, m_ghcof, m_sg_str_x[g], m_sg_str_y[g],
-					      &op );
+          if( m_corder )
+          {
+             rhs4sgcurv_rev( m_iStart[g], m_iEnd[g], m_jStart[g], m_jEnd[g], m_kStart[g], m_kEnd[g],
+                 a_U[g].c_ptr(), a_Mu[g].c_ptr(), a_Lambda[g].c_ptr(), mMetric.c_ptr(),
+                 mJ.c_ptr(), a_Uacc[g].c_ptr(), m_onesided[g], m_acof, m_bope, m_ghcof,
+                 m_sg_str_x[g], m_sg_str_y[g] );
+          }
 #endif
-   }
+       }
+}
+
+
+
+//   for(int g=0 ; g<mNumberOfCartesianGrids; g++ )
+//   {
+//#ifdef SW4_CROUTINES
+//      if( m_corder )
+//      {
+//        EW::countrhs4sg_rev++;
+//        double tmp_time = omp_get_wtime();
+//        
+//	 rhs4sg_rev(m_iStart[g], m_iEnd[g], m_jStart[g], m_jEnd[g], 
+//		     m_kStart[g], m_kEnd[g], m_global_nz[g], m_onesided[g],
+//		     m_acof, m_bope, m_ghcof, a_Uacc[g].c_ptr(), a_U[g].c_ptr(), 
+//		     a_Mu[g].c_ptr(), a_Lambda[g].c_ptr(), mGridSize[g],
+//		     m_sg_str_x[g], m_sg_str_y[g], m_sg_str_z[g] );
+//
+//        tmp_time = omp_get_wtime() - tmp_time;  
+//        EW::rhs4sg_tot_time+= tmp_time;        
+//        if(tmp_time<EW::rhs4sg_min_time) EW::rhs4sg_min_time = tmp_time;
+//        if(tmp_time>EW::rhs4sg_max_time) EW::rhs4sg_max_time = tmp_time;
+//      }
+//      else
+//	 rhs4sg( m_iStart[g], m_iEnd[g], m_jStart[g], m_jEnd[g], 
+//		 m_kStart[g], m_kEnd[g], m_global_nz[g], m_onesided[g],
+//		 m_acof, m_bope, m_ghcof, a_Uacc[g].c_ptr(), a_U[g].c_ptr(), 
+//		 a_Mu[g].c_ptr(), a_Lambda[g].c_ptr(), mGridSize[g],
+//		 m_sg_str_x[g], m_sg_str_y[g], m_sg_str_z[g] );
+//#ifdef DEBUG_CUDA
+//      printf("params = %d, %d, %d, %d, %d, %d \n %f, %f, %f, %f \n %f, %f, %f, %f \n %d \n",  
+//           m_iStart[g], m_iEnd[g], m_jStart[g], m_jEnd[g], 
+//              m_kStart[g], m_kEnd[g],
+//	   (a_Uacc[g].c_ptr())[1], (a_U[g].c_ptr())[1], 
+//              (a_Mu[g].c_ptr())[1], (a_Lambda[g].c_ptr())[1], 
+//	   mGridSize[g], m_sg_str_x[g][1], m_sg_str_y[g][1], m_sg_str_z[g][1],
+//           m_ghost_points); 
+//     printf("onesided[%d](4,5) = %d, %d\n", g, m_onesided[g][4], m_onesided[g][5]);
+//#endif
+//#else
+//      char op = '=';    // Assign Uacc := L(u)
+//      F77_FUNC(rhs4th3fortsgstr,RHS4TH3FORTSGSTR)( &m_iStart[g], &m_iEnd[g], &m_jStart[g], &m_jEnd[g], 
+//						   &m_kStart[g], &m_kEnd[g], &m_global_nz[g], m_onesided[g],
+//						   m_acof, m_bope, m_ghcof, a_Uacc[g].c_ptr(), a_U[g].c_ptr(), 
+//						   a_Mu[g].c_ptr(), a_Lambda[g].c_ptr(), &mGridSize[g],
+//						   m_sg_str_x[g], m_sg_str_y[g], m_sg_str_z[g], &op );
+//#endif	
+//   }
+//   if( m_topography_exists )
+//   {
+//      int g=mNumberOfGrids-1;
+//      char op = '=';    // Assign Uacc := L(u)
+//#ifdef SW4_CROUTINES
+//      if( m_corder )
+//      {
+//        EW::countrhs4sgcurv_rev++;
+//        double tmp_time = omp_get_wtime();
+//
+//         rhs4sgcurv_rev( m_iStart[g], m_iEnd[g], m_jStart[g], m_jEnd[g], m_kStart[g], m_kEnd[g],
+//			 a_U[g].c_ptr(), a_Mu[g].c_ptr(), a_Lambda[g].c_ptr(), mMetric.c_ptr(),
+//			 mJ.c_ptr(), a_Uacc[g].c_ptr(), m_onesided[g], m_acof, m_bope, m_ghcof,
+//			 m_sg_str_x[g], m_sg_str_y[g] );
+//
+//        tmp_time = omp_get_wtime() - tmp_time;  
+//        EW::rhs4sgcurv_tot_time+= tmp_time;        
+//        if(tmp_time<EW::rhs4sgcurv_min_time) EW::rhs4sgcurv_min_time = tmp_time;
+//        if(tmp_time>EW::rhs4sgcurv_max_time) EW::rhs4sgcurv_max_time = tmp_time;
+//      }
+//      else
+//         rhs4sgcurv( m_iStart[g], m_iEnd[g], m_jStart[g], m_jEnd[g], m_kStart[g], m_kEnd[g],
+//		     a_U[g].c_ptr(), a_Mu[g].c_ptr(), a_Lambda[g].c_ptr(), mMetric.c_ptr(),
+//		     mJ.c_ptr(), a_Uacc[g].c_ptr(), m_onesided[g], m_acof, m_bope, m_ghcof,
+//		     m_sg_str_x[g], m_sg_str_y[g] );
+//#else      
+//      F77_FUNC(curvilinear4sg,CURVILINEAR4SG)(&m_iStart[g], &m_iEnd[g], &m_jStart[g], &m_jEnd[g], 
+//					      &m_kStart[g], &m_kEnd[g], a_U[g].c_ptr(), a_Mu[g].c_ptr(),
+//					      a_Lambda[g].c_ptr(), mMetric.c_ptr(), mJ.c_ptr(), a_Uacc[g].c_ptr(),
+//					      m_onesided[g], m_acof, m_bope, m_ghcof, m_sg_str_x[g], m_sg_str_y[g],
+//					      &op );
+//#endif
+//   }
 }
 
 //-----------------------------------------------------------------------

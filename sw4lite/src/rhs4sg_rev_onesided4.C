@@ -79,12 +79,17 @@ void rhs4sg_rev_onesided4( int ifirst, int ilast, int jfirst, int jlast, int kfi
 //   {
       if( onesided[4]==1 )
       {
-#pragma omp for
+#pragma omp for private(k,i,j,mux1,mux2,mux3,mux4,muy1,muy2,muy3,muy4,\
+              r1,r2,r3,mucof,mu1zz,mu2zz,mu3zz,lap2mu,q,u3zip2,u3zip1,\
+              u3zim1,u3zim2,lau3zx,mu3xz,u3zjp2,u3zjp1,u3zjm1,u3zjm2,lau3zy,\
+              mu3yz,mu1zx,u1zip2,u1zip1,u1zim1,u1zim2,\
+	      u2zjp2,u2zjp1,u2zjm1,u2zjm2,mu2zy,lau1xz,lau2yz,kb,qb,mb,muz1,muz2,muz3,muz4)
+
 	 for( k=1 ; k<= 6 ; k++ )
 /* the centered stencil can be used in the x- and y-directions */
 	    for( j=jfirst+2; j<=jlast-2; j++ )
 #pragma simd
-//#pragma ivdep
+#pragma ivdep
 	       for( i=ifirst+2; i<=ilast-2; i++ )
 	       {
 /* from inner_loop_4a */

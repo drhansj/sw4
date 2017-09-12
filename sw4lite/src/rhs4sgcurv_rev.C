@@ -54,7 +54,8 @@ void rhs4sgcurv_rev( int ifirst, int ilast, int jfirst, int jlast, int kfirst, i
 #define bope(i,j) a_bope[i-1+6*(j-1)]
 #define ghcof(i) a_ghcof[i-1]
 
-#pragma omp parallel
+
+//#pragma omp parallel
    {
    int kstart = kfirst+2;
    if( onesided[4] == 1 )
