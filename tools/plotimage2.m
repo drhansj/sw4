@@ -1,26 +1,36 @@
 %
-% PLOTIMAGEF
+% PLOTIMAGE2
 %
-%     plotimagef( fil, machineformat, cvals )
+%     plotimage2( fil, machineformat, cvals )
 %
-%   Plots the image on file 'fil' with contourf, using the contour levels cvals.
+%   Plots the image on file 'fil' with contour, using the contour levels cvals.
 %   If cvals is ommitted, 21 countour levels will be obtained through the imageinfo fcn.
 %
 %   The boundary of each grid patch is outlined in black. A vector cvals can be 
 %   obtained from function imageinfo.
 %
 %   Input:
-%         fil:               Name of image file
-%         machineformat (optional):  Passed to fopen to read big endian, little endian, native, etc
-%         cvals (optional):  Vector of countour levels to plot
+%         fil:                       Name of image file
+%         machineformat (optional):  Passed to fopen to read big endian, little endian, etc
+%         cvals (optional):          Vector of countour levels to plot
 %
-function plotimagef( fil, machineformat, cvals )
+   function plotimage2( fil, machineformat, cvals )
 if nargin < 2
    machineformat='native';
 end;
+
 if nargin < 3
    nc=21;
-   cvals = imageinfo(fil,nc,0,machineformat);
+   [cv0, np, plane, mx, mn] = imageinfo(fil,nc,0,machineformat);
+#   printf("data min=%e, max=%e\n", mn, mx);
+   mn = max(0.006,mx/20);
+   if mx<5*mn
+     mx = 5*mn;
+   end
+   cvals = linspace(mn,mx,nc);
+else
+  mn = cvals(1);
+  mx = cvals(end);
 end;
 
 fd=fopen(fil,'r',machineformat);
@@ -39,13 +49,13 @@ x1max=-1e9;
 x2max=-1e9;
 
 for b=1:nb
-   [im,x,y,z] = readimage(fil,b,0,machineformat);
+	[im,x,y,z] = readimage(fil,b,0,machineformat);
    if plane==0
-     contourf(y,z,im,cvals);
+     contour(y,z,im,cvals);
    elseif plane==1
-     contourf(x,z,im,cvals);
+     contour(x,z,im,cvals);
    elseif plane==2
-     contourf(x,y,im,cvals);
+     contour(x,y,im,cvals);
    end
    if b==1
       hold on;
@@ -111,5 +121,9 @@ end;
 axis([x1min x1max x2min x2max]);
 hold off;
 axis ij; % flip z-axis to point downwards
-title_str=sprintf("Time=%g", t);
-title(title_str);
+axis equal;
+caxis([0.0, mx]);
+colorbar;
+set(gca,"fontsize",16);
+#title_str=sprintf("Time=%g", t);
+#title(title_str);
