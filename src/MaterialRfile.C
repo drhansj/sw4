@@ -327,8 +327,10 @@ void MaterialRfile::read_rfile( )
 {
    string rname = "MaterialRfile::read_rfile";
 
-   MPI_Barrier(MPI_COMM_WORLD);
    double time_start = MPI_Wtime();
+   double time_mpi = 0;
+   MPI_Barrier(MPI_COMM_WORLD);
+   time_mpi += MPI_Wtime() - time_start;
 
   // Figure out bounding box in this processor
    double xmin=1e38, xmax=-1e38, ymin=1e38, ymax=-1e38, zmin=1e38, zmax=-1e38;
@@ -666,7 +668,9 @@ void MaterialRfile::read_rfile( )
       vector<int> isempty(m_npatches), isemptymin(m_npatches);
       for( int p=0 ; p < m_npatches ; p++ )
 	 isempty[p] = m_isempty[p];
+      double time_allreduce = MPI_Wtime();
       MPI_Allreduce( &isempty[0], &isemptymin[0], m_npatches, MPI_INT, MPI_MIN, MPI_COMM_WORLD );
+      time_mpi += MPI_Wtime() - time_allreduce;
       for( int p=0 ; p < m_npatches ; p++ )
 	 m_isempty[p] = (isemptymin[p] == 1);
 
@@ -764,7 +768,10 @@ void MaterialRfile::read_rfile( )
    else
       cout << "MaterialRfile::read_rfile, error could not open file " << fname << endl;
    
+    double time_barrier = MPI_Wtime();
     MPI_Barrier(MPI_COMM_WORLD);
+    time_mpi += MPI_Wtime() - time_barrier;
+    mEW->print_execution_time( 0., time_mpi, "just mpi in reading rfile" );
     mEW->print_execution_time( time_start, MPI_Wtime(), "reading rfile" );
 }
 

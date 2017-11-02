@@ -1,7 +1,7 @@
 # SW4 input file for testing the rfile command
 
 # set pfs=1 if you are on a parallel file system
-fileio path=berkeley-results pfs=0
+fileio path=berkeley-results pfs=1
 
 # time t=4
 time steps=0

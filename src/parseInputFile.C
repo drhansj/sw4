@@ -3703,6 +3703,7 @@ void EW::setParallel_IO(bool pfs, int nwriters)
 { 
   m_pfs = pfs;
   m_nwriters = nwriters;
+  cout << "Setting parallel IO up for nwriters=" << m_nwriters << endl;
 }
 
 //-----------------------------------------------------------------------
