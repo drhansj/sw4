@@ -66,6 +66,8 @@ main(int argc, char **argv)
   // Initialize MPI...
   MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
+  double time[5];
+  time[0] = MPI_Wtime(); // start time
 
 #ifdef ENABLE_TAU
    TAU_PROFILE_INIT(argc, argv);
@@ -135,6 +137,7 @@ main(int argc, char **argv)
 
 // make a new simulation object by reading the input file 'fileName'
   EW simulation(fileName, GlobalSources, GlobalTimeSeries);
+  time[1] = MPI_Wtime(); // after input/rfile reads
 
   if (!simulation.wasParsingSuccessful())
   {
@@ -148,6 +151,7 @@ main(int argc, char **argv)
   {
 // get the simulation object ready for time-stepping
     simulation.setupRun( GlobalSources );
+    time[2] = MPI_Wtime(); // after setupRun
 
     if (!simulation.isInitialized())
     { 
@@ -167,6 +171,7 @@ main(int argc, char **argv)
       }
 // run the simulation
       simulation.solve( GlobalSources, GlobalTimeSeries );
+      time[3] = MPI_Wtime(); // after solve
 
 // save all time series
       
@@ -174,6 +179,7 @@ main(int argc, char **argv)
       {
 	GlobalTimeSeries[ts]->writeFile();
       }
+      time[4] = MPI_Wtime(); // after time series writes
 
       if( myRank == 0 )
       {
@@ -185,7 +191,15 @@ main(int argc, char **argv)
       status = 0;
     }
   }
-  
+  // Output timing results
+	cout << "============================================================" << endl
+ 	     << "Timer results (seconds) in main:" << endl
+ 	     << "    input/rfile:" << time[1]- time[0] << endl
+ 	     << "       setupRun:" << time[2]- time[1] << endl
+ 	     << "          solve:" << time[3]- time[2] << endl
+ 	     << "    time series:" << time[4]- time[3] << endl
+	     << "============================================================" << endl;
+ 
   if( status == 1 )
   {
     cout  << "============================================================" << endl
