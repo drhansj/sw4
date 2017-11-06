@@ -2,14 +2,16 @@
 
 # using parallel i/o
 #fileio path=/p/lscratchh/andersp/rfile-lscratch/hayward-h100-results pfs=1 nwriters=32
+fileio path=/global/cscratch1/sd/u6336/sw4-ecp/performance/rfile/hayward-h100-results pfs=1 nwriters=32
 # not using parallel io
-fileio path=hayward-h100-results
+# fileio path=hayward-h100-results
 
 # Grid coords:
 # DON'T CHANGE AZ
 grid x=100e3 y=100e3 z=30e3 h=100  lat=38.33 lon=-122.075 az=143.6380001671 proj=tmerc datum=NAD83 lon_p=-123.0 lat_p=35.0 scale=0.9996
 
-time t=9.0
+# time t=9.0
+time steps=0
 
 globalmaterial  vpmin=866 vsmin=500
 
@@ -17,8 +19,12 @@ globalmaterial  vpmin=866 vsmin=500
 
 # Rfile USGS 3D model + topography
 # NERSC (cori) parallel file system:
-rfile filename=USGSBayAreaVM-08.3.0-corder.rfile directory=/global/cscratch1/sd/andersp/hayward
-topography input=rfile zmax=2.5e3 order=3 file=/global/cscratch1/sd/andersp/hayward/USGSBayAreaVM-08.3.0-corder.rfile
+# rfile filename=USGSBayAreaVM-08.3.0-corder.rfile directory=/global/cscratch1/sd/andersp/hayward
+# topography input=rfile zmax=2.5e3 order=3 file=/global/cscratch1/sd/andersp/hayward/USGSBayAreaVM-08.3.0-corder.rfile
+
+# Hans' config on Cori
+rfile filename=USGSBayAreaVM-08.3.0-corder.rfile directory=/global/cscratch1/sd/u6336/sw4-ecp/performance/rfile
+topography input=rfile zmax=2.5e3 order=3 file=/global/cscratch1/sd/u6336/sw4-ecp/performance/rfile/USGSBayAreaVM-08.3.0-corder.rfile
 
 # LC (quartz) parallel file system
 #rfile filename=USGSBayAreaVM-08.3.0-corder.rfile directory=/p/lscratchh/andersp/rfile-lscratch

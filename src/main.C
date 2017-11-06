@@ -192,12 +192,14 @@ main(int argc, char **argv)
     }
   }
   // Output timing results
+  if (myRank == 0)
 	cout << "============================================================" << endl
  	     << "Timer results (seconds) in main:" << endl
  	     << "    input/rfile:" << time[1]- time[0] << endl
  	     << "       setupRun:" << time[2]- time[1] << endl
  	     << "          solve:" << time[3]- time[2] << endl
  	     << "    time series:" << time[4]- time[3] << endl
+ 	     << "          total:" << time[4]- time[0] << endl
 	     << "============================================================" << endl;
  
   if( status == 1 )
