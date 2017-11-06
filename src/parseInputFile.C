@@ -177,12 +177,17 @@ bool EW::parseInputFile( vector<Source*> & a_GlobalUniqueSources,
   int blockCount=0;
   int ablockCount=0;
   double timers[5];
+  double time_io = 0;
+  double time_mpi = 0;
 
-  MPI_Barrier(MPI_COMM_WORLD);
   double time_start = MPI_Wtime();
   timers[0] = time_start;
+  MPI_Barrier(MPI_COMM_WORLD);
+  time_mpi += MPI_Wtime() - time_start;
 
+  double time_io_open = MPI_Wtime();
   inputFile.open(mName.c_str());
+  time_io += MPI_Wtime() - time_io_open;
   if (!inputFile.is_open())
   {
     if (m_myRank == 0)
@@ -209,7 +214,10 @@ bool EW::parseInputFile( vector<Source*> & a_GlobalUniqueSources,
 // these commands can enter data directly the object (this->)
   while (!inputFile.eof())
   {    
+     double time_io_getline = MPI_Wtime();
      inputFile.getline(buffer, 256);
+     time_io += MPI_Wtime() - time_io_getline;
+
      if (startswith("testrayleigh", buffer) )
      {
        m_doubly_periodic = true;
@@ -233,8 +241,10 @@ bool EW::parseInputFile( vector<Source*> & a_GlobalUniqueSources,
      
   }
 
+  double time_io_seek = MPI_Wtime();
   inputFile.clear();
   inputFile.seekg(0, ios::beg); // reset file pointer to the beginning of the input file
+  time_io += MPI_Wtime() - time_io_seek;
 
 //---------------------------------------------------------------
 // Then process the grid, fileio, and topography commands so
@@ -247,7 +257,9 @@ bool EW::parseInputFile( vector<Source*> & a_GlobalUniqueSources,
 // these commands can enter data directly into the object (this->)
   while (!inputFile.eof())
   {    
+     double time_io_getline = MPI_Wtime();
      inputFile.getline(buffer, 256);
+     time_io += MPI_Wtime() - time_io_getline;
      if( startswith("grid", buffer) )
      {
        foundGrid = true;
@@ -320,8 +332,10 @@ bool EW::parseInputFile( vector<Source*> & a_GlobalUniqueSources,
 // sort and correct vector 'm_refinementBoundaries'. Initialize if not already available
   cleanUpRefinementLevels();
   
+  time_io_seek = MPI_Wtime();
   inputFile.clear();
   inputFile.seekg(0, ios::beg); // reset file pointer to the beginning of the input file
+  time_io += MPI_Wtime() - time_io_seek;
 
 // At this point we only allocate solution arrays for the Cartesian grids 
 // Need to read the topography information before we can decide on sizes for the
@@ -416,7 +430,9 @@ bool EW::parseInputFile( vector<Source*> & a_GlobalUniqueSources,
   //----------------------------------------------------------
   while (!inputFile.eof())
   {
+     double time_io_getline = MPI_Wtime();
      inputFile.getline(buffer, 256);
+     time_io += MPI_Wtime() - time_io_getline;
 
      if (strlen(buffer) > 0) // empty lines produce this
      {
@@ -528,7 +544,9 @@ bool EW::parseInputFile( vector<Source*> & a_GlobalUniqueSources,
   if (m_myRank == 0)
      cout << endl;
 
+  double time_io_close = MPI_Wtime();
   inputFile.close();
+  time_io += MPI_Wtime() - time_io_close;
 
 // tmp:
   // if (m_myRank == 0)
@@ -544,12 +562,13 @@ bool EW::parseInputFile( vector<Source*> & a_GlobalUniqueSources,
   timers[2] = MPI_Wtime(); // Rest of the input file, post-MPI
 
   // Output timing results
-  if (myRank == 0)
+  if (m_myRank == 0)
 	cout << "============================================================" << endl
 	     << "Timer results (seconds) in parseInputFile:" << endl
 	     << "    input open/header:" << time[1]- time[0] << endl
 	     << "    material file/MPI:" << time[2]- time[1] << endl
 	     << "                total:" << time[2]- time[0] << endl
+	     << "     (just input I/O):" << time_io << endl
 	     << "============================================================" << endl;
   // print_execution_time( time_start, MPI_Wtime(), "reading input file" );
 
