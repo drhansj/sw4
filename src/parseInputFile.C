@@ -176,9 +176,11 @@ bool EW::parseInputFile( vector<Source*> & a_GlobalUniqueSources,
   ifstream inputFile;
   int blockCount=0;
   int ablockCount=0;
+  double timers[5];
 
   MPI_Barrier(MPI_COMM_WORLD);
   double time_start = MPI_Wtime();
+  timers[0] = time_start;
 
   inputFile.open(mName.c_str());
   if (!inputFile.is_open())
@@ -408,6 +410,7 @@ bool EW::parseInputFile( vector<Source*> & a_GlobalUniqueSources,
     printf("Total number of grid points (without ghost points): %g\n\n", nTot);
       
   }
+  timers[1] = MPI_Wtime(); // After all the input header reads
   //----------------------------------------------------------
   // Now onto the rest of the input file...
   //----------------------------------------------------------
@@ -538,8 +541,17 @@ bool EW::parseInputFile( vector<Source*> & a_GlobalUniqueSources,
 
 // wait until all processes have read the input file
   MPI_Barrier(MPI_COMM_WORLD);
+  timers[2] = MPI_Wtime(); // Rest of the input file, post-MPI
 
-  print_execution_time( time_start, MPI_Wtime(), "reading input file" );
+  // Output timing results
+  if (myRank == 0)
+	cout << "============================================================" << endl
+	     << "Timer results (seconds) in parseInputFile:" << endl
+	     << "    input open/header:" << time[1]- time[0] << endl
+	     << "    material file/MPI:" << time[2]- time[1] << endl
+	     << "                total:" << time[2]- time[0] << endl
+	     << "============================================================" << endl;
+  // print_execution_time( time_start, MPI_Wtime(), "reading input file" );
 
   // ---------------------------------------------
   // cross command line checks
