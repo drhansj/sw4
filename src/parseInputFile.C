@@ -565,9 +565,9 @@ bool EW::parseInputFile( vector<Source*> & a_GlobalUniqueSources,
   if (m_myRank == 0)
 	cout << "============================================================" << endl
 	     << "Timer results (seconds) in parseInputFile:" << endl
-	     << "    input open/header:" << time[1]- time[0] << endl
-	     << "    material file/MPI:" << time[2]- time[1] << endl
-	     << "                total:" << time[2]- time[0] << endl
+	     << "    input open/header:" << timers[1]- timers[0] << endl
+	     << "    material file/MPI:" << timers[2]- timers[1] << endl
+	     << "                total:" << timers[2]- timers[0] << endl
 	     << "     (just input I/O):" << time_io << endl
 	     << "============================================================" << endl;
   // print_execution_time( time_start, MPI_Wtime(), "reading input file" );
