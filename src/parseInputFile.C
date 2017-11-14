@@ -176,7 +176,7 @@ bool EW::parseInputFile( vector<Source*> & a_GlobalUniqueSources,
   ifstream inputFile;
   int blockCount=0;
   int ablockCount=0;
-  double timers[5];
+  double timers[10];
   double time_io = 0;
   double time_mpi = 0;
 
@@ -343,7 +343,10 @@ bool EW::parseInputFile( vector<Source*> & a_GlobalUniqueSources,
   allocateCartesianSolverArrays(m_global_zmax); 
 
 // setup 2D communicators on the finest grid so that we can smooth the topography
+  double time_mpi_setup = MPI_Wtime();
   setup2D_MPICommunications();
+  time_mpi += MPI_Wtime() - time_mpi_setup;
+  timers[1] = MPI_Wtime(); // Before topography, just reading input
 
 // deal with topography
   if (m_topography_exists)
@@ -372,6 +375,7 @@ bool EW::parseInputFile( vector<Source*> & a_GlobalUniqueSources,
      }      
      else if( m_topoInputStyle == EW::Rfile )
 	extractTopographyFromRfile( m_topoFileName );
+  timers[2] = MPI_Wtime(); // After extracting topography from file
 
 // preprocess the mTopo array
      if (m_topoInputStyle != EW::GaussianHill) // no smoothing or extrapolation for a gaussian hill
@@ -395,7 +399,9 @@ bool EW::parseInputFile( vector<Source*> & a_GlobalUniqueSources,
   }
     
 // setup communicators for 3D solutions on all grids
+  double time_mpi_3Dsetup = MPI_Wtime();
   setupMPICommunications();
+  time_mpi += MPI_Wtime() - time_mpi_3Dsetup;
 
 // make the grid, allocate arrays for the curvilinear grid
   if (m_topography_exists)
@@ -424,7 +430,7 @@ bool EW::parseInputFile( vector<Source*> & a_GlobalUniqueSources,
     printf("Total number of grid points (without ghost points): %g\n\n", nTot);
       
   }
-  timers[1] = MPI_Wtime(); // After all the input header reads
+  timers[3] = MPI_Wtime(); // After all the topography is done
   //----------------------------------------------------------
   // Now onto the rest of the input file...
   //----------------------------------------------------------
@@ -547,6 +553,7 @@ bool EW::parseInputFile( vector<Source*> & a_GlobalUniqueSources,
   double time_io_close = MPI_Wtime();
   inputFile.close();
   time_io += MPI_Wtime() - time_io_close;
+  timers[4] = MPI_Wtime(); // After the rfile is done
 
 // tmp:
   // if (m_myRank == 0)
@@ -558,17 +565,23 @@ bool EW::parseInputFile( vector<Source*> & a_GlobalUniqueSources,
     cout << "********Done reading the input file*********" << endl;
 
 // wait until all processes have read the input file
+  double time_mpi_barrier = MPI_Wtime();
   MPI_Barrier(MPI_COMM_WORLD);
-  timers[2] = MPI_Wtime(); // Rest of the input file, post-MPI
+  double time_mpi_postbarrier = MPI_Wtime();
+  time_mpi += time_mpi_postbarrier - time_mpi_barrier;
+  timers[5] = time_mpi_postbarrier; // Rest of the input file, post-MPI
 
   // Output timing results
   if (m_myRank == 0)
 	cout << "============================================================" << endl
 	     << "Timer results (seconds) in parseInputFile:" << endl
 	     << "    input open/header:" << timers[1]- timers[0] << endl
-	     << "    material file/MPI:" << timers[2]- timers[1] << endl
-	     << "                total:" << timers[2]- timers[0] << endl
-	     << "     (just input I/O):" << time_io << endl
+	     << "      topography file:" << timers[2]- timers[1] << endl
+	     << "      topography done:" << timers[3]- timers[2] << endl
+	     << "        material file:" << timers[4]- timers[3] << endl
+	     << "                total:" << timers[5]- timers[0] << endl
+	     << " (parseInputFile I/O):" << time_io << endl
+	     << " (parseInputFile MPI):" << time_mpi << endl
 	     << "============================================================" << endl;
   // print_execution_time( time_start, MPI_Wtime(), "reading input file" );
 
@@ -3734,7 +3747,8 @@ void EW::setParallel_IO(bool pfs, int nwriters)
 { 
   m_pfs = pfs;
   m_nwriters = nwriters;
-  // cout << "Setting parallel IO up for nwriters=" << m_nwriters << endl;
+  if (m_myRank == 0)
+    cout << "Setting parallel IO up for nwriters=" << m_nwriters << endl;
 }
 
 //-----------------------------------------------------------------------
@@ -5295,6 +5309,7 @@ void EW::processSource(char* buffer, vector<Source*> & a_GlobalUniqueSources )
 //----------------------------------------------------------------------------
 void EW::processRupture(char* buffer, vector<Source*> & a_GlobalUniqueSources )
 {
+  double timer_start = MPI_Wtime();
 // the rupture command reads a file with
 // point moment tensor sources in the strike, dip, rake format
 // for each source, the slip velocity time function is defined by a discrete time function
@@ -5673,6 +5688,14 @@ void EW::processRupture(char* buffer, vector<Source*> & a_GlobalUniqueSources )
     
     fclose(fd);
   }
+
+  // Output timing results
+  double timer_end = MPI_Wtime();
+  if (m_myRank == 0)
+	cout << "========================================================" << endl
+	     << "Timer results (seconds) in processRupture:" << endl
+	     << "     processRupture total:" << timer_end - timer_start << endl
+	     << "========================================================" << endl;
 } // end processRupture()
 
 
@@ -7700,6 +7723,8 @@ void EW::processMaterialVimaterial(char* buffer)
 //-----------------------------------------------------------------------
 void EW::processMaterialRfile(char* buffer)
 {
+  double timer_start = MPI_Wtime();
+
    string name = "rfile";
 
   // Used for pfiles
@@ -7767,6 +7792,14 @@ void EW::processMaterialRfile(char* buffer)
 
    MaterialRfile* rf = new MaterialRfile( this, filename, directory, bufsize );
    add_mtrl_block( rf  );
+ 
+  // Output timing results
+  double timer_end = MPI_Wtime();
+  if (m_myRank == 0)
+	cout << "========================================================" << endl
+	     << "Timer results (seconds) in processMaterialRfile:" << endl
+	     << "  processMaterialRFile total:" << timer_end - timer_start << endl
+	     << "========================================================" << endl;
 }
 
 #ifdef ENABLE_OPT

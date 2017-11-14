@@ -771,8 +771,17 @@ void MaterialRfile::read_rfile( )
     double time_barrier = MPI_Wtime();
     MPI_Barrier(MPI_COMM_WORLD);
     time_mpi += MPI_Wtime() - time_barrier;
-    mEW->print_execution_time( 0., time_mpi, "just mpi in reading rfile" );
-    mEW->print_execution_time( time_start, MPI_Wtime(), "reading rfile" );
+    double time_end = MPI_Wtime();
+
+    // Output timing results
+    int myRank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
+    if (myRank == 0)
+    cout << "========================================================" << endl
+         << "Timer results (seconds) in MaterialRfile::read_rfile:" << endl
+         << "     read_rfile total:" << time_end-time_start << endl
+         << "       read_rfile MPI:" << time_mpi << endl
+         << "========================================================" << endl;
 }
 
 //-----------------------------------------------------------------------
