@@ -579,7 +579,7 @@ bool EW::parseInputFile( vector<Source*> & a_GlobalUniqueSources,
 	     << "      topography file:" << timers[2]- timers[1] << endl
 	     << "      topography done:" << timers[3]- timers[2] << endl
 	     << "        material file:" << timers[4]- timers[3] << endl
-	     << "                total:" << timers[5]- timers[0] << endl
+	     << " parseInputFile total:" << timers[5]- timers[0] << endl
 	     << " (parseInputFile I/O):" << time_io << endl
 	     << " (parseInputFile MPI):" << time_mpi << endl
 	     << "============================================================" << endl;
