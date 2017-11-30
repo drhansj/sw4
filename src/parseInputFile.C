@@ -5285,7 +5285,8 @@ void EW::processRupture(char* buffer, vector<Source*> & a_GlobalUniqueSources )
   timeDep tDep = iDiscrete;
   char formstring[100];
   strcpy(formstring, "Discrete");
-  char rfile[100];
+  const int RFILE_MAXCHAR = 1024;
+  char rfile[RFILE_MAXCHAR];
 
 // bounding box
 // only check the z>zmin when we have topography. For a flat free surface, we will remove sources too 
@@ -5313,7 +5314,7 @@ void EW::processRupture(char* buffer, vector<Source*> & a_GlobalUniqueSources )
       if (startswith("file=",token))
       {
 	token += 5; // read past 'file='
-         strncpy(rfile, token,100);
+         strncpy(rfile, token, RFILE_MAXCHAR);
 	 rfileset = true;
       }
       else
