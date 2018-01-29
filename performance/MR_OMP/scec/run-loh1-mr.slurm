@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH -N 4
 #SBATCH -p debug
-#SBATCH -A m2545
+#SBATCH -A m2868
 #SBATCH -S 4     # Special cores per nodes (4 are idle)
 #SBATCH -t 00:30:00 
 #SBATCH -C knl,quad,cache
@@ -29,6 +29,9 @@ numlc=$(( ${numhc}*4 ))
 
 echo "Running on ${numnodes} nodes with ${numprocs} MPI ranks and OMP_NUM_THREADS=${numcores}."
 
+# CrayPat performance data dir must exist
+setenv PAT_RT_EXPDIR_NAME $SCRATCH/craypat_dir
+
 # Intel OpenMP runtime parameters
 export OMP_NUM_THREADS=${numcores}
 export OMP_PLACES=threads
@@ -39,6 +42,7 @@ MPI_COMMAND="srun -N ${numnodes} -n ${numprocs} -c ${numlc} --cpu_bind=cores"
 
 # 1st case
 CASE=LOH.1-h100-mr
+# CrayPat: Make sure run command is symbolic link'ed to sw4_mp+pat
 RUN_COMMAND="./sw4_mp ${CASE}.in"
 ${MPI_COMMAND} ${RUN_COMMAND}  >& ${CASE}-sw4_mp-${numprocs}mpi-${numcores}threads.out
 
